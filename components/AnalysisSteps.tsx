@@ -58,7 +58,7 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
 
             <p className="text-xs text-gray-500 mt-1 truncate max-w-full font-mono">
               {status === 'loading' ? 'Processing...' :
-                status === 'complete' ? errorMsg || (children ? 'Complete' : 'Done') : 'Failed'}
+                status === 'complete' ? (children ? (isExpanded ? 'Hide detailed breakdown' : 'Show detailed breakdown') : 'Done') : 'Failed'}
             </p>
           </div>
         </div>
@@ -136,6 +136,9 @@ export const ProtocolStep: React.FC<{
             <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
               {diagnostic.logs.map((log, i) => (
                 <div key={i} className="flex gap-2 animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                  <div className="flex flex-col text-gray-600 font-mono text-[8px] leading-tight pt-0.5">
+                    [{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]
+                  </div>
                   <span className="text-blue-500 font-bold shrink-0">&gt;</span>
                   <span className="text-gray-300 leading-normal">{log}</span>
                 </div>
@@ -368,8 +371,8 @@ export const AggregationStep: React.FC<{
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${results.btcCorrelation === 'Positive' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                    results.btcCorrelation === 'Negative' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                      'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                  results.btcCorrelation === 'Negative' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                    'bg-gray-500/10 text-gray-400 border-gray-500/20'
                   }`}>
                   {results.btcCorrelation}
                 </span>

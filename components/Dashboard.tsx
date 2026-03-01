@@ -267,10 +267,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       const protoLogs = [
         "INITIALIZING GLASS BOX DIAGNOSTICS...",
         `CONNECTING TO EXCHANGE: FETCHING ${pair.symbol} STREAMS...`,
-        "NETWORK STABILITY: OPTIMAL (SECURE)",
-        "HANDSHAKE PROTOCOL: ENCRYPTED",
-        "SYNCING DAILY ANCHOR POINTS...",
-        "SYSTEM HEALTH: 100%"
+        "DATA RECEIVED: 1H STREAMS INGESTED. DAILY ANCHOR SYNCED.",
+        "NEWS INGESTION: 50 HEADLINES QUEUED FOR SENTIMENT AUDIT.",
+        "DATA FEED STABILIZED. TRANSITIONING TO PROTOCOL EXECUTION...",
+        "SYSTEM HEALTH: 100% (SECURE)"
       ];
 
       await wait(2000);
