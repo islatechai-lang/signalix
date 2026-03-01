@@ -312,17 +312,25 @@ app.post('/api/create-checkout', async (req, res) => {
     }
 
     const successUrl = `${origin}?payment=success`;
-    console.log(`[Server] Creating checkout configuration for Plan: ${planId}, Success URL: ${successUrl}`);
+    console.log(`[Server] Generating checkout URL for Plan: ${planId}, Success URL: ${successUrl}`);
 
-    // Use /checkout_configurations for reliable redirects and pre-filling
-    const checkoutConfig = await whopFetch('/checkout_configurations', 'POST', {
-      plan_id: planId,
-      mode: 'subscription', // Required field
-      redirect_url: successUrl,
-      customer_email: customerEmail
-    });
+    // Since this is a Non-Platform integration, we shouldn't use /checkout_configurations.
+    // We just need to get the plan and use its purchase_url.
+    const planConfig = await whopFetch(`/plans/${planId}`);
 
-    const checkoutUrl = checkoutConfig.purchase_url;
+    let checkoutUrl = planConfig.purchase_url || planConfig.direct_link || planConfig.release_method?.checkout_url;
+
+    if (!checkoutUrl) {
+      throw new Error("Unable to retrieve checkout URL from the Whop plan.");
+    }
+
+    // Append query params. Whop allows pre-filling email and success_url.
+    if (checkoutUrl.includes('?')) {
+      checkoutUrl += `&email=${encodeURIComponent(customerEmail)}&success_url=${encodeURIComponent(successUrl)}`;
+    } else {
+      checkoutUrl += `?email=${encodeURIComponent(customerEmail)}&success_url=${encodeURIComponent(successUrl)}`;
+    }
+
     console.log(`[Server] Success! Generated checkout URL: ${checkoutUrl}`);
 
     res.json({ url: checkoutUrl });
