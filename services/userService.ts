@@ -1,22 +1,22 @@
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInWithPopup, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut,
   User,
   sendEmailVerification,
   sendPasswordResetEmail
 } from "firebase/auth";
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc
 } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 import { UserProfile } from '../types';
-import { INITIAL_CREDITS } from '../constants';
+import { INITIAL_CREDITS, PRO_PLAN_CREDITS } from '../constants';
 import { paymentService } from './paymentService';
 
 // Helper to convert Firebase User + Firestore Data to our UserProfile type
@@ -39,7 +39,7 @@ const getFriendlyErrorMessage = (error: any): string => {
   if (error.message === 'ALREADY_VERIFIED') return 'ALREADY_VERIFIED';
 
   const code = error.code;
-  
+
   switch (code) {
     case 'auth/invalid-credential':
     case 'auth/invalid-login-credentials': // Some SDK versions use this
@@ -63,12 +63,12 @@ const getFriendlyErrorMessage = (error: any): string => {
     default:
       // Robust cleaning for unhandled codes
       if (error.message) {
-         // Regex to strip "Firebase: Error (auth/xxx)." pattern
-         const cleanMsg = error.message.replace(/^Firebase:\s*(Error\s*)?\(auth\/[\w-]+\)\.?\s*/i, '');
-         if (cleanMsg && cleanMsg.trim().length > 0) {
-            // Capitalize first letter
-            return cleanMsg.charAt(0).toUpperCase() + cleanMsg.slice(1);
-         }
+        // Regex to strip "Firebase: Error (auth/xxx)." pattern
+        const cleanMsg = error.message.replace(/^Firebase:\s*(Error\s*)?\(auth\/[\w-]+\)\.?\s*/i, '');
+        if (cleanMsg && cleanMsg.trim().length > 0) {
+          // Capitalize first letter
+          return cleanMsg.charAt(0).toUpperCase() + cleanMsg.slice(1);
+        }
       }
       return 'An unexpected error occurred.';
   }
@@ -78,7 +78,7 @@ export const userService = {
   // Login with Email/Password
   async login(email: string, password?: string): Promise<UserProfile> {
     if (!password) throw new Error("Password required");
-    
+
     try {
       // 1. Attempt Sign In
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -119,7 +119,7 @@ export const userService = {
 
   // Register new user
   async register(email: string, name?: string, password?: string): Promise<void> {
-    if (!password) password = "defaultPassword123!"; 
+    if (!password) password = "defaultPassword123!";
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -153,15 +153,15 @@ export const userService = {
   // Note: We must temporarily sign them in to send the email, then sign them out.
   async resendVerification(email: string, password?: string): Promise<void> {
     if (!password) throw new Error("Password required to resend verification.");
-    
+
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       if (user.emailVerified) {
-         // Already verified, just return
-         await signOut(auth);
-         throw new Error("ALREADY_VERIFIED");
+        // Already verified, just return
+        await signOut(auth);
+        throw new Error("ALREADY_VERIFIED");
       }
 
       await sendEmailVerification(user);
@@ -178,7 +178,7 @@ export const userService = {
     } catch (error: any) {
       // Handle user-not-found specifically for clearer context, if enumeration protection is OFF.
       if (error.code === 'auth/user-not-found') {
-         throw new Error("No account found with this email address.");
+        throw new Error("No account found with this email address.");
       }
       throw new Error(getFriendlyErrorMessage(error));
     }
@@ -221,7 +221,7 @@ export const userService = {
   async updateCredits(email: string, newAmount: number): Promise<void> {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
-    
+
     try {
       const userDocRef = doc(db, "users", currentUser.uid);
       await updateDoc(userDocRef, {
@@ -239,9 +239,9 @@ export const userService = {
 
     try {
       const userDocRef = doc(db, "users", currentUser.uid);
-      const updates = { isPro: true, credits: 999999 };
+      const updates = { isPro: true, credits: PRO_PLAN_CREDITS };
       await updateDoc(userDocRef, updates);
-      
+
       const updatedDoc = await getDoc(userDocRef);
       return mapUserToProfile(currentUser, updatedDoc.data());
     } catch (e) {
@@ -267,29 +267,29 @@ export const userService = {
     try {
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (userDoc.exists()) {
         const profileData = userDoc.data();
         let currentProfile = mapUserToProfile(user, profileData);
 
         if (currentProfile.isPro && currentProfile.email) {
-           try {
-             const status = await paymentService.checkSubscriptionStatus(currentProfile.email);
-             if (!status.isPro) {
-                await updateDoc(userDocRef, { isPro: false, credits: 3 }); 
-                currentProfile.isPro = false;
-                currentProfile.credits = 3;
-             }
-           } catch (err) {
-             console.warn("Failed sync", err);
-           }
+          try {
+            const status = await paymentService.checkSubscriptionStatus(currentProfile.email);
+            if (!status.isPro) {
+              await updateDoc(userDocRef, { isPro: false, credits: 3 });
+              currentProfile.isPro = false;
+              currentProfile.credits = 3;
+            }
+          } catch (err) {
+            console.warn("Failed sync", err);
+          }
         }
         return currentProfile;
       }
     } catch (error) {
       console.warn("Firestore access failed.");
     }
-    
+
     return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
   }
 };

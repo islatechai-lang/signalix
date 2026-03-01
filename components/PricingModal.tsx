@@ -3,6 +3,7 @@ import { X, Check, Zap, Loader2, ArrowLeft } from 'lucide-react';
 import { UserProfile } from '../types';
 import { paymentService } from '../services/paymentService';
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
+import { PRO_PLAN_PRICE, PRO_PLAN_CREDITS } from '../constants';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -77,12 +78,12 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
 
             <div className="bg-gradient-to-b from-cyber-panel to-transparent p-6 rounded-xl border border-cyber-border mb-8">
               <div className="flex justify-center items-baseline mb-4">
-                <span className="text-3xl font-bold text-white">$35</span>
+                <span className="text-3xl font-bold text-white">${PRO_PLAN_PRICE}</span>
                 <span className="text-gray-500">/month</span>
               </div>
               <ul className="space-y-3 mb-6">
                 {[
-                  "Unlimited AI Analysis",
+                  `${PRO_PLAN_CREDITS} AI Analysis / Month`,
                   "Access to Gemini Pro Thinking Mode",
                   "Real-time Indicator Calculations",
                   "Priority Processing Queue",

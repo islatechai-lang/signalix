@@ -234,8 +234,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const runAnalysis = async (pair: CryptoPair, tf: string) => {
-    // Pro users bypass credit check
-    if (!user.isPro && credits < COST_PER_ANALYSIS) {
+    // Check for credits
+    if (credits < COST_PER_ANALYSIS) {
       setShowPricing(true);
       setSessionState('pair-select');
       return;
@@ -492,10 +492,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           text: `Analysis Inconclusive: Market conditions are completely flat. No actionable signal detected.`
         });
       } else {
-        // Only deduct credits if NOT Pro
-        if (!user.isPro) {
-          setCredits(prev => prev - COST_PER_ANALYSIS);
-        }
+        // All users deduct credits if not Neutral
+        setCredits(prev => prev - COST_PER_ANALYSIS);
       }
 
       // CALCULATE SUMMARY FOR HISTORY
