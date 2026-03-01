@@ -363,29 +363,28 @@ app.get('/api/subscription', async (req, res) => {
     }
 
     // Find active or trialing
-    const activeSub = memberships.find(m => m.status === 'active' || m.status === 'trialing');
+    const activeSub = memberships.find(m => m.valid === true);
 
     if (activeSub) {
       res.json({
         found: true,
         id: activeSub.id,
         status: activeSub.status,
-        current_period_end: activeSub.valid_until, // Whop uses valid_until
+        current_period_end: activeSub.expires_at || activeSub.renewal_period_end || null,
         cancel_at_period_end: activeSub.cancel_at_period_end,
-        amount: activeSub.plan?.initial_price,
-        currency: activeSub.plan?.base_currency
+        amount: activeSub.plan?.initial_price || 0,
+        currency: activeSub.plan?.base_currency || 'USD'
       });
     } else {
       // Check for any canceled but valid till end
-      const now = new Date();
-      const canceledButValid = memberships.find(m => m.status === 'canceled' && m.valid_until && new Date(m.valid_until) > now);
+      const canceledButValid = memberships.find(m => m.status === 'canceled' && m.valid === true);
 
       if (canceledButValid) {
         res.json({
           found: true,
           id: canceledButValid.id,
           status: canceledButValid.status,
-          current_period_end: canceledButValid.valid_until,
+          current_period_end: canceledButValid.expires_at || canceledButValid.renewal_period_end || null,
           cancel_at_period_end: true
         });
       } else {
@@ -394,7 +393,7 @@ app.get('/api/subscription', async (req, res) => {
           found: true,
           id: latestExp.id,
           status: latestExp.status,
-          current_period_end: latestExp.valid_until
+          current_period_end: latestExp.expires_at || latestExp.renewal_period_end || null
         });
       }
     }
@@ -428,14 +427,7 @@ app.post('/api/sync-subscription', async (req, res) => {
       return res.json({ isPro: false });
     }
 
-    const now = new Date();
-    const validSub = memberships.find(m => {
-      // Check for active status
-      if (m.status === 'active' || m.status === 'trialing' || m.status === 'free') return true;
-      // also check if valid_until is in the future
-      if (m.valid_until && new Date(m.valid_until) > now) return true;
-      return false;
-    });
+    const validSub = memberships.find(m => m.valid === true);
 
     console.log(`[Server] Result for ${email}: isPro = ${!!validSub}`);
     res.json({ isPro: !!validSub });
