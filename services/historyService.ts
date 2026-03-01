@@ -1,17 +1,17 @@
-import { 
-  collection, 
-  addDoc, 
+import {
+  collection,
+  addDoc,
   deleteDoc,
   doc,
-  query, 
-  where, 
-  limit, 
+  query,
+  where,
+  limit,
   getDocs,
   orderBy,
-  Timestamp 
+  Timestamp
 } from "firebase/firestore";
 import { db } from "../firebaseConfig";
-import { HistoryItem, AIAnalysisResult, CryptoPair, TechnicalIndicators, AggregationResult, MarketSummary } from "../types";
+import { HistoryItem, AIAnalysisResult, CryptoPair, TechnicalIndicators, AggregationResult, MarketSummary, HedgeFundAudit, SentimentAnalysis } from "../types";
 
 const COLLECTION_NAME = "analysis_history";
 
@@ -24,19 +24,19 @@ const serverLog = (level: 'info' | 'warn' | 'error', message: string, details?: 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ level, message, details })
-  }).catch(() => {}); 
+  }).catch(() => { });
 };
 
 // Robust sanitization to prevent "Unsupported Field Value: undefined" errors in Firestore
 const sanitizeData = (data: any): any => {
   if (data === null) return null;
   if (data === undefined) return null;
-  
+
   // Handle NaN (Firestore doesn't like NaN in some contexts, safer to use null)
   if (typeof data === 'number' && isNaN(data)) return null;
-  
+
   if (typeof data !== 'object') return data;
-  if (data instanceof Date) return data; 
+  if (data instanceof Date) return data;
 
   if (Array.isArray(data)) {
     return data.map(item => sanitizeData(item));
@@ -55,18 +55,20 @@ const sanitizeData = (data: any): any => {
 };
 
 export const historyService = {
-  
+
   async saveAnalysis(
-    userId: string, 
-    pair: CryptoPair, 
-    timeframe: string, 
+    userId: string,
+    pair: CryptoPair,
+    timeframe: string,
     result: AIAnalysisResult,
     indicators: TechnicalIndicators,
     aggregation: AggregationResult,
-    marketSummary: MarketSummary
+    marketSummary: MarketSummary,
+    hedgeFund?: HedgeFundAudit,
+    sentiment?: SentimentAnalysis
   ) {
     serverLog('info', `[History] Attempting to save full analysis for user: ${userId}`);
-    
+
     if (!userId) {
       serverLog('error', "[History] Error: No User ID provided.");
       return;
@@ -79,7 +81,7 @@ export const historyService = {
       const cleanIndicators = sanitizeData(indicators);
       const cleanAggregation = sanitizeData(aggregation);
       const cleanSummary = sanitizeData(marketSummary);
-      
+
       const payload = {
         userId,
         pair: cleanPair,
@@ -88,13 +90,15 @@ export const historyService = {
         indicators: cleanIndicators,
         aggregation: cleanAggregation,
         marketSummary: cleanSummary,
+        hedgeFund: sanitizeData(hedgeFund),
+        sentiment: sanitizeData(sentiment),
         timestamp: Timestamp.now()
       };
 
       // 2. Write to Firestore
       const docRef = await addDoc(collection(db, COLLECTION_NAME), payload);
       serverLog('info', `[History] SUCCESS: Document written with ID: ${docRef.id}`);
-      
+
     } catch (error: any) {
       serverLog('error', "[History] SAVE FAILED.", { code: error.code, message: error.message });
     }
@@ -106,7 +110,7 @@ export const historyService = {
       const q = query(
         collection(db, COLLECTION_NAME),
         where("userId", "==", userId),
-        orderBy("timestamp", "desc"), 
+        orderBy("timestamp", "desc"),
         limit(50)
       );
 
@@ -115,12 +119,12 @@ export const historyService = {
 
       const items = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        
+
         let ts = Date.now();
         if (data.timestamp && typeof data.timestamp.toMillis === 'function') {
-           ts = data.timestamp.toMillis();
+          ts = data.timestamp.toMillis();
         } else if (data.timestamp instanceof Date) {
-           ts = data.timestamp.getTime();
+          ts = data.timestamp.getTime();
         }
 
         return {
@@ -132,6 +136,8 @@ export const historyService = {
           indicators: data.indicators,
           aggregation: data.aggregation,
           marketSummary: data.marketSummary,
+          hedgeFund: data.hedgeFund,
+          sentiment: data.sentiment,
           timestamp: ts
         } as HistoryItem;
       });

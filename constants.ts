@@ -119,3 +119,4 @@ export const TIMEFRAMES: TimeframeConfig[] = [
 
 export const INITIAL_CREDITS = 3;
 export const COST_PER_ANALYSIS = 1;
+export const SYSTEM_VERSION = 'v2.4.0-alpha';

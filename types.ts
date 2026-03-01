@@ -73,7 +73,16 @@ export interface AggregationResult {
   upScore: number;
   downScore: number;
   alignment: number;
-  marketRegime: 'TRENDING' | 'RANGING' | 'VOLATILE';
+  marketRegime: 'TRENDING' | 'VOLATILE' | 'RANGING';
+  btcCorrelation?: 'Positive' | 'Negative' | 'Neutral';
+}
+
+export interface ProtocolDiagnostic {
+  network: 'SECURE' | 'ENCRYPTED' | 'HYPER-FLUID';
+  encryption: string;
+  latency: number;
+  logs: string[];
+  systemVersion: string;
 }
 
 export interface AIAnalysisResult {
@@ -98,6 +107,32 @@ export interface MarketSummary {
   openPrice: number; // Used to reconstruct change calc
 }
 
+export interface HedgeFundAudit {
+  score: number; // 0-100
+  checksPassed: number;
+  totalChecks: number;
+  status: 'Pass' | 'Caution Required' | 'High Risk';
+  points: {
+    label: string;
+    value: string;
+    passed: boolean;
+  }[];
+}
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+}
+
+export interface SentimentAnalysis {
+  articlesScanned: number;
+  headlines: NewsArticle[];
+  narratives: { word: string; count: number }[];
+  consensus: 'Bullish' | 'Bearish' | 'Neutral' | 'Leaning Bullish' | 'Leaning Bearish';
+}
+
 export interface HistoryItem {
   id: string;
   userId: string;
@@ -109,13 +144,18 @@ export interface HistoryItem {
   indicators?: TechnicalIndicators;
   aggregation?: AggregationResult;
   marketSummary?: MarketSummary;
+  hedgeFund?: HedgeFundAudit;
+  sentiment?: SentimentAnalysis;
 }
 
-export type FeedItemType = 
+export type FeedItemType =
   | 'user-selection'
   | 'step-data'
   | 'step-technical'
+  | 'step-protocol'
   | 'step-aggregation'
+  | 'step-hedge-fund'
+  | 'step-sentiment'
   | 'step-ai'
   | 'step-verdict'
   | 'system-message';

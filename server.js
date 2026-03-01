@@ -99,38 +99,45 @@ app.post('/api/analyze', async (req, res) => {
     v: d.volumeto
   }));
 
+  const { hedgeFund, sentiment } = req.body;
+
   const prompt = `
-    You are SignalixAI, an elite AI trading engine. 
-    Analyze the following market data for ${pairName} on the ${timeframe} timeframe.
+    You are SignalixAI (v2.4.0-alpha), an institutional-grade market analysis engine.
+    Operational Mode: Gemini 3.1 Pro (Thinking Mode).
     
-    Current Price: ${ohlc[ohlc.length - 1].close}
+    Analyze the following multi-layer data for ${pairName} on the ${timeframe} timeframe.
     
-    Technical Indicators:
+    [CORE MARKET DATA]
+    - Current Price: ${ohlc[ohlc.length - 1].close}
     - RSI (14): ${indicators.rsi.value}
-    - SMA (20): ${indicators.sma20.toFixed(2)}
-    - SMA (50): ${indicators.sma50.toFixed(2)}
-    - Bollinger Bands: Width ${indicators.bollinger.width.toFixed(2)}%
+    - SMA (20/50): ${indicators.sma20.toFixed(2)} / ${indicators.sma50.toFixed(2)}
+    - Bollinger Width: ${indicators.bollinger.width.toFixed(2)}%
     - MACD: ${indicators.macd.value.toFixed(4)}
-
-    Recent Price Action (Last 15 candles):
-    ${JSON.stringify(recentOHLC)}
-
-    Your Goal: Provide a clear, actionable trading signal. Traders pay for decisions, not hesitation.
-
-    CRITICAL RESPONSE RULES:
-    1. Return ONLY a valid JSON object.
-    2. Do NOT write any conversational text outside the JSON.
-    3. Put your internal reasoning inside the 'thoughtProcess' field.
-    4. Verdict MUST be one of: 'UP', 'DOWN', or 'NEUTRAL'.
-    5. Confidence Score:
-       - If you detect ANY trend or edge, assign a high confidence (90-99).
-       - Users expect high conviction. Do not give weak signals.
-    6. BE DECISIVE: 
-       - If indicators lean Bullish, output 'UP' with 90%+ confidence.
-       - If indicators lean Bearish, output 'DOWN' with 90%+ confidence.
-       - Only use 'NEUTRAL' if the market is absolutely flat.
+    - BTC Correlation: ${req.body.aggregation?.btcCorrelation || 'Neutral'} (Crucial for Altcoin context)
     
-    Return ONLY valid JSON matching the schema.
+    [HEDGE FUND AUDIT]
+    - Safety Score: ${hedgeFund?.score || 'N/A'}/100
+    - Status: ${hedgeFund?.status || 'N/A'}
+    - Key Checks: ${JSON.stringify(hedgeFund?.points || [])}
+    
+    [SENTIMENT INTELLIGENCE]
+    - Articles Scanned: ${sentiment?.articlesScanned || 0}
+    - Consensus: ${sentiment?.consensus || 'Neutral'}
+    - Narratives: ${JSON.stringify(sentiment?.narratives || [])}
+    
+    [PRICE ACTION (15 CANDLES)]
+    ${JSON.stringify(recentOHLC)}
+    
+    [GOAL]
+    Provide a robust, high-accuracy analysis. Focus on institutional safety.
+    
+    [CRITICAL RULES]
+    1. STRICT NEUTRALITY: If market is ranging, choppy, or the Hedge Fund Audit score is < 50, you MUST output 'NEUTRAL'.
+    2. ACCURACY OVER VOLUME: Do not force a signal. Only issue UP/DOWN if there is a 90%+ clear technical and sentiment alignment.
+    3. If 'NEUTRAL', set targets/stoploss to "N/A - Market Ranging".
+    4. Provide internal deep reasoning in 'thoughtProcess'.
+    
+    Return ONLY a valid JSON object matching the requested schema.
   `;
 
   // Helper function to try models in sequence

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { AIAnalysisResult, CryptoPair } from '../types';
-import { ArrowUpRight, ArrowDownRight, Minus, ShieldAlert, Target, TrendingUp, Clock, Hourglass, Gavel, BarChart2 } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, ShieldAlert, Target, TrendingUp, Clock, Hourglass, Gavel, BarChart2, Globe } from 'lucide-react';
+import { SYSTEM_VERSION } from '../constants';
 
 interface VerdictCardProps {
   result: AIAnalysisResult | null;
@@ -31,7 +32,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
 
     const scriptId = 'tradingview-widget-script';
     const containerId = `tradingview_${Math.random().toString(36).substring(7)}`;
-    
+
     // Assign a unique ID to the container for this specific instance
     if (containerRef.current) {
       containerRef.current.id = containerId;
@@ -79,52 +80,58 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
 
   const isBullish = result.verdict === 'UP';
   const isBearish = result.verdict === 'DOWN';
-  
-  const mainColor = isBullish ? 'text-cyber-green' : isBearish ? 'text-cyber-red' : 'text-yellow-400';
+
+  const mainColor = isBullish ? 'text-cyber-green' : isBearish ? 'text-cyber-red' : 'text-yellow-500';
   const bgGlow = isBullish ? 'shadow-[0_0_30px_rgba(0,255,157,0.1)]' : isBearish ? 'shadow-[0_0_30px_rgba(255,42,42,0.1)]' : 'shadow-[0_0_30px_rgba(250,204,21,0.1)]';
   const borderColor = isBullish ? 'border-cyber-green/30' : isBearish ? 'border-cyber-red/30' : 'border-yellow-400/30';
-  
+
   // Icon styling to match AnalysisSteps
-  const iconStyle = isBullish 
-    ? 'bg-green-500/10 text-green-400 border-green-500/20' 
-    : isBearish 
-      ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+  const iconStyle = isBullish
+    ? 'bg-green-500/10 text-green-400 border-green-500/20'
+    : isBearish
+      ? 'bg-red-500/10 text-red-400 border-red-500/20'
       : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
 
   return (
     <div className={`glass-panel rounded-xl border ${borderColor} ${bgGlow} animate-in zoom-in-95 duration-500 overflow-hidden`}>
-      
+
       {/* Header Section (Matching Step Style) */}
       <div className="p-4 flex items-center gap-4 border-b border-gray-800/50 bg-black/20">
-         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${iconStyle}`}>
-            <Gavel className="w-5 h-5" />
-         </div>
-         <div>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${iconStyle}`}>
+          <Gavel className="w-5 h-5" />
+        </div>
+        <div className="flex-1 flex justify-between items-center">
+          <div>
             <div className="flex items-center gap-2">
-               <h3 className="font-bold text-sm tracking-wide text-gray-200">Final Verdict</h3>
-               <span className="text-[10px] bg-gray-800/80 text-gray-400 px-1.5 py-0.5 rounded font-mono border border-gray-700/50">COMPLETE</span>
+              <h3 className="font-bold text-sm tracking-wide text-gray-200">Final Verdict</h3>
+              <span className="text-[10px] bg-gray-800/80 text-gray-400 px-1.5 py-0.5 rounded font-mono border border-gray-700/50">COMPLETE</span>
             </div>
             <p className="text-xs text-gray-500 font-mono mt-0.5">Strategic execution plan generated</p>
-         </div>
+          </div>
+          <div className="bg-black/40 border border-gray-800/50 px-2 py-1 rounded flex items-center gap-2 hidden md:flex">
+            <div className="w-2 h-2 rounded-full bg-cyber-cyan animate-pulse"></div>
+            <span className="text-[9px] text-gray-500 font-mono uppercase tracking-widest">{SYSTEM_VERSION} Institutional</span>
+          </div>
+        </div>
       </div>
 
       {/* Top Header: Verdict & Score */}
       <div className="p-6 pb-4 flex flex-col justify-between items-start gap-4 relative">
         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-           {isBullish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32" /> : isBearish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32 rotate-180" /> : <Minus className="w-24 h-24 md:w-32 md:h-32" />}
+          {isBullish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32" /> : isBearish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32 rotate-180" /> : <ShieldAlert className="w-24 h-24 md:w-32 md:h-32" />}
         </div>
 
         <div className="relative z-10 w-full">
           <h3 className="text-gray-400 text-[10px] font-mono uppercase tracking-widest mb-1 opacity-70">AI Predicted Direction</h3>
           <div className="flex items-center justify-between">
-            <div className={`text-5xl md:text-6xl font-black tracking-tighter ${mainColor} flex items-center gap-1`}>
+            <div className={`text-4xl md:text-5xl font-black tracking-tighter ${mainColor} flex items-center gap-2 pr-2`}>
               {isBullish && <ArrowUpRight className="w-10 h-10 md:w-12 md:h-12" />}
               {isBearish && <ArrowDownRight className="w-10 h-10 md:w-12 md:h-12" />}
               {!isBullish && !isBearish && <Minus className="w-10 h-10 md:w-12 md:h-12" />}
-              {result.verdict}
+              <span className="truncate">{result.verdict === 'NEUTRAL' ? 'NEUTRAL / NO TRADE' : result.verdict}</span>
             </div>
-            
-            <div className="flex items-end flex-col">
+
+            <div className="flex items-end flex-col shrink-0">
               <span className={`text-4xl md:text-5xl font-mono font-bold ${result.confidence >= 90 ? 'text-cyber-cyan' : 'text-gray-300'}`}>
                 {result.confidence}%
               </span>
@@ -136,24 +143,24 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
 
       {/* Info Bar: Duration & Strategy (Fixed Layout) */}
       <div className="bg-black/30 border-y border-gray-800/50 flex flex-wrap">
-         <div className="flex-1 p-3 border-r border-gray-800/50 flex items-center justify-center md:justify-start gap-3 min-w-[150px]">
-            <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center shrink-0">
-               <Hourglass className="w-4 h-4 text-gray-400" />
-            </div>
-            <div>
-               <div className="text-[9px] text-gray-500 font-mono uppercase">Expected Duration</div>
-               <div className="text-sm text-gray-200 font-bold">{result.predictionDuration}</div>
-            </div>
-         </div>
-         <div className="flex-1 p-3 flex items-center justify-center md:justify-start gap-3 min-w-[150px]">
-             <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center shrink-0">
-               <Clock className="w-4 h-4 text-gray-400" />
-            </div>
-            <div>
-               <div className="text-[9px] text-gray-500 font-mono uppercase">Strategy Type</div>
-               <div className="text-sm text-cyber-cyan font-mono font-bold">{result.timeHorizon || 'Intraday'}</div>
-            </div>
-         </div>
+        <div className="flex-1 p-3 border-r border-gray-800/50 flex items-center justify-center md:justify-start gap-3 min-w-[150px]">
+          <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center shrink-0">
+            <Hourglass className="w-4 h-4 text-gray-400" />
+          </div>
+          <div>
+            <div className="text-[9px] text-gray-500 font-mono uppercase">Expected Duration</div>
+            <div className="text-sm text-gray-200 font-bold">{result.predictionDuration}</div>
+          </div>
+        </div>
+        <div className="flex-1 p-3 flex items-center justify-center md:justify-start gap-3 min-w-[150px]">
+          <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4 text-gray-400" />
+          </div>
+          <div>
+            <div className="text-[9px] text-gray-500 font-mono uppercase">Strategy Type</div>
+            <div className="text-sm text-cyber-cyan font-mono font-bold">{result.timeHorizon || 'Intraday'}</div>
+          </div>
+        </div>
       </div>
 
       <div className="p-6 pt-4">
@@ -167,12 +174,12 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
         {pair && (
           <div className="mb-6 border border-gray-800/50 rounded-lg overflow-hidden bg-[#0b0b10] shadow-inner">
             <div className="p-2 border-b border-gray-800/50 flex items-center gap-2 text-gray-400 bg-black/20">
-               <BarChart2 className="w-3 h-3 text-cyber-cyan" />
-               <span className="text-[10px] font-bold uppercase tracking-wider">Live Chart: {pair.base}/{pair.quote}</span>
+              <BarChart2 className="w-3 h-3 text-cyber-cyan" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Live Chart: {pair.base}/{pair.quote}</span>
             </div>
-            <div 
-              ref={containerRef} 
-              className="w-full h-[320px]" 
+            <div
+              ref={containerRef}
+              className="w-full h-[320px]"
             ></div>
           </div>
         )}
@@ -189,7 +196,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
               ))}
             </ul>
           </div>
-          
+
           <div className="bg-gray-900/30 p-4 rounded border border-gray-800/50 hover:bg-gray-900/50 transition-colors">
             <h4 className="flex items-center gap-2 text-cyber-magenta text-xs font-bold uppercase mb-3">
               <Target className="w-3 h-3" /> Trade Targets

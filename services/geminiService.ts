@@ -1,24 +1,24 @@
-import { AIAnalysisResult, OHLCData, TechnicalIndicators } from '../types';
+import { AIAnalysisResult, OHLCData, TechnicalIndicators, HedgeFundAudit, SentimentAnalysis } from '../types';
 
 export const analyzeMarket = async (
   pairName: string,
   timeframe: string,
   ohlc: OHLCData[],
-  indicators: TechnicalIndicators
+  indicators: TechnicalIndicators,
+  hedgeFund?: HedgeFundAudit,
+  sentiment?: SentimentAnalysis
 ): Promise<AIAnalysisResult> => {
-  console.log(`[Client] Requesting Market Analysis from Server for ${pairName}`);
-
   try {
     const response = await fetch('/api/analyze', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         pairName,
         timeframe,
         ohlc,
-        indicators
+        indicators,
+        hedgeFund,
+        sentiment
       })
     });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, CheckCircle2, ChevronDown, ChevronUp, Database, Activity, Scale, Brain, ArrowUp, ArrowDown, Minus } from 'lucide-react';
-import { OHLCData, TechnicalIndicators, AIAnalysisResult, AggregationResult } from '../types';
+import { Loader2, CheckCircle2, ChevronDown, ChevronUp, Database, Activity, Scale, Brain, ArrowUp, ArrowDown, Minus, ShieldAlert, Globe, Cpu, Terminal, Shield } from 'lucide-react';
+import { OHLCData, TechnicalIndicators, AIAnalysisResult, AggregationResult, HedgeFundAudit, SentimentAnalysis, ProtocolDiagnostic } from '../types';
 
 interface StepProps {
   status: 'loading' | 'complete' | 'error';
@@ -29,38 +29,36 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
 
   return (
     <div className="bg-[#0b0b10] border border-gray-800 rounded-xl overflow-hidden mb-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out shadow-xl">
-      <div 
+      <div
         className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors border-b border-gray-900/50"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-4 flex-1 overflow-hidden">
           {/* Icon Box */}
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-700 ${
-            status === 'loading' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-700 ${status === 'loading' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
             status === 'complete' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-          }`}>
-            {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : 
-             status === 'complete' ? <CheckCircle2 className="w-5 h-5" /> : icon}
+            }`}>
+            {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> :
+              status === 'complete' ? <CheckCircle2 className="w-5 h-5" /> : icon}
           </div>
 
           {/* Title & Status */}
           <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <h3 className={`font-bold text-sm tracking-wide truncate transition-colors duration-500 ${
-                status === 'loading' ? 'text-purple-400' : 'text-gray-200'
-              }`}>
+              <h3 className={`font-bold text-sm tracking-wide truncate transition-colors duration-500 ${status === 'loading' ? 'text-purple-400' : 'text-gray-200'
+                }`}>
                 {title}
               </h3>
               {duration && status === 'complete' && (
                 <span className="text-xs font-mono font-bold text-gray-300 bg-gray-800/80 px-2 py-0.5 rounded border border-gray-700/50 shadow-sm animate-in fade-in zoom-in duration-500 shrink-0">
-                   {safeFixed(duration, 2)}s
+                  {safeFixed(duration, 2)}s
                 </span>
               )}
             </div>
-            
+
             <p className="text-xs text-gray-500 mt-1 truncate max-w-full font-mono">
-              {status === 'loading' ? 'Processing...' : 
-               status === 'complete' ? errorMsg || (children ? 'Complete' : 'Done') : 'Failed'} 
+              {status === 'loading' ? 'Processing...' :
+                status === 'complete' ? errorMsg || (children ? 'Complete' : 'Done') : 'Failed'}
             </p>
           </div>
         </div>
@@ -68,7 +66,7 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
         {/* Right Actions: Expand */}
         <div className="flex items-center gap-4 ml-2 shrink-0">
           {headerRight}
-          
+
           <div className={`text-gray-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
             <ChevronDown className="w-4 h-4" />
           </div>
@@ -80,13 +78,77 @@ const BaseStep: React.FC<StepProps> = ({ status, title, icon, duration, children
           {children}
         </div>
       )}
-      
+
       {status === 'error' && (
         <div className="border-t border-red-900/30 p-4 bg-red-900/10 text-red-400 text-sm">
           Error: {errorMsg || 'Operation failed'}
         </div>
       )}
     </div>
+  );
+};
+
+export const ProtocolStep: React.FC<{
+  status: 'loading' | 'complete' | 'error';
+  diagnostic?: ProtocolDiagnostic;
+  duration?: number;
+}> = ({ status, diagnostic, duration }) => {
+  return (
+    <BaseStep
+      status={status}
+      title="Protocol Execution"
+      icon={<Cpu className="w-4 h-4" />}
+      duration={duration}
+    >
+      {status === 'loading' && <p className="text-xs text-gray-500 animate-pulse font-mono pl-1">System diagnostics and integrity checks...</p>}
+
+      {status === 'complete' && !diagnostic && (
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">Diagnostic logs unavailable.</p>
+      )}
+
+      {diagnostic && (
+        <div className="space-y-4 pt-2">
+          {/* Hardware/Network Status */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-black/40 border border-gray-800/50 p-2 rounded flex flex-col items-center">
+              <span className="text-[8px] text-gray-500 font-bold uppercase mb-1">Network</span>
+              <span className="text-[10px] text-cyber-cyan font-mono font-bold">{diagnostic.network}</span>
+            </div>
+            <div className="bg-black/40 border border-gray-800/50 p-2 rounded flex flex-col items-center">
+              <span className="text-[8px] text-gray-500 font-bold uppercase mb-1">Encryption</span>
+              <span className="text-[10px] text-purple-400 font-mono font-bold">{diagnostic.encryption}</span>
+            </div>
+            <div className="bg-black/40 border border-gray-800/50 p-2 rounded flex flex-col items-center">
+              <span className="text-[8px] text-gray-500 font-bold uppercase mb-1">Latency</span>
+              <span className="text-[10px] text-green-400 font-mono font-bold">{diagnostic.latency}ms</span>
+            </div>
+          </div>
+
+          {/* Glass Box Terminal */}
+          <div className="bg-[#050508] border border-gray-800 rounded-lg p-3 font-mono text-[10px] relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
+
+            <div className="flex justify-between items-center mb-2 border-b border-gray-800/50 pb-1">
+              <span className="text-gray-500 text-[8px] flex items-center gap-1"><Terminal className="w-3 h-3" /> System Log: Live Diagnostics</span>
+              <span className="text-gray-600 text-[8px]">{diagnostic.systemVersion}</span>
+            </div>
+
+            <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+              {diagnostic.logs.map((log, i) => (
+                <div key={i} className="flex gap-2 animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${i * 100}ms` }}>
+                  <span className="text-blue-500 font-bold shrink-0">&gt;</span>
+                  <span className="text-gray-300 leading-normal">{log}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-2 text-green-500/80 font-bold pt-2 border-t border-gray-800/30 mt-2">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                <span>DATA FEED STABILIZED. READY FOR QUANTITATIVE AUDIT.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </BaseStep>
   );
 };
 
@@ -98,29 +160,29 @@ export const DataCollectionStep: React.FC<{
 }> = ({ status, data, pair, duration }) => {
   const lastCandle = data?.[data.length - 1];
   const firstCandle = data?.[0];
-  
+
   let change = 0;
   let changePercent = 0;
-  
+
   // Safe calculation to avoid crashing if data points are malformed
   if (lastCandle && firstCandle && typeof lastCandle.close === 'number' && typeof firstCandle.open === 'number') {
-    change = lastCandle.close - firstCandle.open; 
+    change = lastCandle.close - firstCandle.open;
     changePercent = firstCandle.open !== 0 ? (change / firstCandle.open) * 100 : 0;
   }
 
   return (
-    <BaseStep 
-      status={status} 
-      title="Data Collection" 
+    <BaseStep
+      status={status}
+      title="Data Collection"
       icon={<Database className="w-4 h-4" />}
       duration={duration}
     >
       {status === 'loading' && (
         <p className="text-gray-400 text-xs pl-1 font-mono animate-pulse">Fetching live market data from CryptoCompare...</p>
       )}
-      
+
       {status === 'complete' && !data && (
-         <p className="text-gray-500 text-xs pl-1 font-mono italic">Historical price data archived/unavailable.</p>
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">Historical price data archived/unavailable.</p>
       )}
 
       {data && lastCandle && (
@@ -128,11 +190,11 @@ export const DataCollectionStep: React.FC<{
           <div>
             <div className="text-gray-500 text-[10px] uppercase font-bold mb-1">Current Price</div>
             <div className="text-2xl font-bold text-white tracking-tight font-mono">
-                ${safeFixed(lastCandle.close, lastCandle.close < 1 ? 5 : 2)}
+              ${safeFixed(lastCandle.close, lastCandle.close < 1 ? 5 : 2)}
             </div>
-             <div className="flex justify-between items-center mt-3 border-t border-gray-800/50 pt-2">
+            <div className="flex justify-between items-center mt-3 border-t border-gray-800/50 pt-2">
               <span className="text-gray-500 text-xs">Volume 24h</span>
-              <span className="text-gray-300 font-mono text-xs">{safeFixed(lastCandle.volumeto / 1000, 1)}K</span> 
+              <span className="text-gray-300 font-mono text-xs">{safeFixed(lastCandle.volumeto / 1000, 1)}K</span>
             </div>
           </div>
           <div>
@@ -141,7 +203,7 @@ export const DataCollectionStep: React.FC<{
               {changePercent > 0 ? <Activity className="w-4 h-4" /> : <Activity className="w-4 h-4 rotate-180" />}
               {changePercent > 0 ? '+' : ''}{safePercent(changePercent)}%
             </div>
-             <div className="flex justify-between items-center mt-3 border-t border-gray-800/50 pt-2">
+            <div className="flex justify-between items-center mt-3 border-t border-gray-800/50 pt-2">
               <span className="text-gray-500 text-xs">Data Points</span>
               <span className="text-purple-400 font-mono text-xs">{data.length} candles</span>
             </div>
@@ -159,25 +221,24 @@ const IndicatorRow = ({ name, signal, desc, value, strength }: { name: string, s
       <span className="text-xs font-bold text-gray-200">{name}</span>
       <span className="text-[10px] text-gray-500">{desc}</span>
     </div>
-    
+
     <div className="flex items-center gap-2 sm:w-1/4">
-       <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-         signal === 'UP' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' :
-         signal === 'DOWN' ? 'bg-red-500/10 text-red-300 border-red-500/20' :
-         'bg-gray-800 text-gray-400 border-gray-700'
-       }`}>
-         {signal || 'N/A'}
-       </span>
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${signal === 'UP' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' :
+        signal === 'DOWN' ? 'bg-red-500/10 text-red-300 border-red-500/20' :
+          'bg-gray-800 text-gray-400 border-gray-700'
+        }`}>
+        {signal || 'N/A'}
+      </span>
     </div>
 
     <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center sm:w-1/3 w-full mt-1 sm:mt-0">
-       <span className="text-xs font-mono text-gray-300 font-bold">{value || '-'}</span>
-       <div className="flex items-center gap-1 mt-0.5">
-          <div className="w-12 h-1 bg-gray-800 rounded-full overflow-hidden">
-             <div className="h-full bg-blue-500" style={{ width: `${Math.min(strength || 0, 100)}%` }}></div>
-          </div>
-          <span className="text-[10px] text-gray-600">{Math.round(strength || 0)}</span>
-       </div>
+      <span className="text-xs font-mono text-gray-300 font-bold">{value || '-'}</span>
+      <div className="flex items-center gap-1 mt-0.5">
+        <div className="w-12 h-1 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500" style={{ width: `${Math.min(strength || 0, 100)}%` }}></div>
+        </div>
+        <span className="text-[10px] text-gray-600">{Math.round(strength || 0)}</span>
+      </div>
     </div>
   </div>
 );
@@ -195,36 +256,36 @@ export const TechnicalStep: React.FC<{
   duration?: number;
 }> = ({ status, indicators, duration }) => {
   return (
-    <BaseStep 
-      status={status} 
-      title="Technical Analysis" 
+    <BaseStep
+      status={status}
+      title="Technical Analysis"
       icon={<Activity className="w-4 h-4" />}
       duration={duration}
     >
       {status === 'loading' && (
-         <p className="text-xs text-gray-500 animate-pulse font-mono pl-1">Computing technical indicators...</p>
+        <p className="text-xs text-gray-500 animate-pulse font-mono pl-1">Computing technical indicators...</p>
       )}
 
       {status === 'complete' && !indicators && (
-         <p className="text-gray-500 text-xs pl-1 font-mono italic">Detailed technical data archived/unavailable.</p>
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">Detailed technical data archived/unavailable.</p>
       )}
 
       {indicators && (
         <div className="pb-1">
-           <SectionHeader title="Momentum Indicators" />
-           <IndicatorRow name="RSI" signal={indicators.rsi?.signal} desc={indicators.rsi?.description} value={indicators.rsi?.value} strength={indicators.rsi?.strength} />
-           <IndicatorRow name="Stochastic K/D" signal={indicators.stochastic?.signal} desc="Neutral momentum" value={`${safeFixed(indicators.stochastic?.k, 0)}/${safeFixed(indicators.stochastic?.d, 0)}`} strength={indicators.stochastic?.strength} />
-           <IndicatorRow name="Momentum" signal={indicators.momentum?.signal} desc={indicators.momentum?.description} value={indicators.momentum?.value} strength={indicators.momentum?.strength} />
-           <IndicatorRow name="ROC" signal={indicators.roc?.signal} desc={indicators.roc?.description} value={indicators.roc?.value} strength={indicators.roc?.strength} />
+          <SectionHeader title="Momentum Indicators" />
+          <IndicatorRow name="RSI" signal={indicators.rsi?.signal} desc={indicators.rsi?.description} value={indicators.rsi?.value} strength={indicators.rsi?.strength} />
+          <IndicatorRow name="Stochastic K/D" signal={indicators.stochastic?.signal} desc="Neutral momentum" value={`${safeFixed(indicators.stochastic?.k, 0)}/${safeFixed(indicators.stochastic?.d, 0)}`} strength={indicators.stochastic?.strength} />
+          <IndicatorRow name="Momentum" signal={indicators.momentum?.signal} desc={indicators.momentum?.description} value={indicators.momentum?.value} strength={indicators.momentum?.strength} />
+          <IndicatorRow name="ROC" signal={indicators.roc?.signal} desc={indicators.roc?.description} value={indicators.roc?.value} strength={indicators.roc?.strength} />
 
-           <SectionHeader title="Trend Indicators" />
-           <IndicatorRow name="MACD" signal={indicators.macd?.signal} desc={indicators.macd?.description} value={safeFixed(indicators.macd?.value, 4)} strength={indicators.macd?.strength} />
-           <IndicatorRow name="ADX" signal={indicators.adx?.signal} desc={indicators.adx?.description} value={indicators.adx?.value} strength={indicators.adx?.strength} />
-           <IndicatorRow name="SMA Structure" signal={indicators.trendSignal?.signal} desc={indicators.trendSignal?.description} value={safeFixed(indicators.sma50, 2)} strength={indicators.trendSignal?.strength} />
+          <SectionHeader title="Trend Indicators" />
+          <IndicatorRow name="MACD" signal={indicators.macd?.signal} desc={indicators.macd?.description} value={safeFixed(indicators.macd?.value, 4)} strength={indicators.macd?.strength} />
+          <IndicatorRow name="ADX" signal={indicators.adx?.signal} desc={indicators.adx?.description} value={indicators.adx?.value} strength={indicators.adx?.strength} />
+          <IndicatorRow name="SMA Structure" signal={indicators.trendSignal?.signal} desc={indicators.trendSignal?.description} value={safeFixed(indicators.sma50, 2)} strength={indicators.trendSignal?.strength} />
 
-           <SectionHeader title="Volatility & Volume" />
-           <IndicatorRow name="Bollinger Bands" signal={indicators.bollinger?.signal} desc="Band Width" value={`Width: ${safeFixed(indicators.bollinger?.width, 2)}%`} strength={indicators.bollinger?.strength} />
-           <IndicatorRow name="Volume Trend" signal={indicators.volumeTrend?.signal} desc={indicators.volumeTrend?.description} value={indicators.volumeTrend?.value} strength={indicators.volumeTrend?.strength} />
+          <SectionHeader title="Volatility & Volume" />
+          <IndicatorRow name="Bollinger Bands" signal={indicators.bollinger?.signal} desc="Band Width" value={`Width: ${safeFixed(indicators.bollinger?.width, 2)}%`} strength={indicators.bollinger?.strength} />
+          <IndicatorRow name="Volume Trend" signal={indicators.volumeTrend?.signal} desc={indicators.volumeTrend?.description} value={indicators.volumeTrend?.value} strength={indicators.volumeTrend?.strength} />
 
         </div>
       )}
@@ -238,62 +299,208 @@ export const AggregationStep: React.FC<{
   duration?: number;
 }> = ({ status, results, duration }) => {
   return (
-    <BaseStep 
-      status={status} 
-      title="Signal Aggregation" 
+    <BaseStep
+      status={status}
+      title="Signal Aggregation"
       icon={<Scale className="w-4 h-4" />}
       duration={duration}
     >
       {status === 'loading' && <p className="text-xs text-gray-500 animate-pulse font-mono pl-1">Weighing signals for confidence score...</p>}
-      
+
       {status === 'complete' && !results && (
-         <p className="text-gray-500 text-xs pl-1 font-mono italic">Aggregation details archived/unavailable.</p>
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">Aggregation details archived/unavailable.</p>
       )}
 
       {results && (
         <div className="space-y-6 pt-2">
           {/* Top Cards */}
           <div className="grid grid-cols-3 gap-2">
-             <div className="bg-[#0f1a15] border border-green-900/30 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-green-500 mb-1">{results.upCount || 0}</div>
-                <div className="text-[9px] text-green-400/60 uppercase font-bold tracking-wider">UP Signals</div>
-             </div>
-             <div className="bg-[#1a0f0f] border border-red-900/30 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-red-500 mb-1">{results.downCount || 0}</div>
-                <div className="text-[9px] text-red-400/60 uppercase font-bold tracking-wider">DOWN Signals</div>
-             </div>
-             <div className="bg-[#121216] border border-gray-800 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-gray-400 mb-1">{results.neutralCount || 0}</div>
-                <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Neutral</div>
-             </div>
+            <div className="bg-[#0f1a15] border border-green-900/30 p-3 rounded-lg text-center">
+              <div className="text-2xl font-bold text-green-500 mb-1">{results.upCount || 0}</div>
+              <div className="text-[9px] text-green-400/60 uppercase font-bold tracking-wider">UP Signals</div>
+            </div>
+            <div className="bg-[#1a0f0f] border border-red-900/30 p-3 rounded-lg text-center">
+              <div className="text-2xl font-bold text-red-500 mb-1">{results.downCount || 0}</div>
+              <div className="text-[9px] text-red-400/60 uppercase font-bold tracking-wider">DOWN Signals</div>
+            </div>
+            <div className="bg-[#121216] border border-gray-800 p-3 rounded-lg text-center">
+              <div className="text-2xl font-bold text-gray-400 mb-1">{results.neutralCount || 0}</div>
+              <div className="text-[9px] text-gray-500 uppercase font-bold tracking-wider">Neutral</div>
+            </div>
           </div>
 
           {/* Scores */}
           <div className="space-y-3 px-1">
-             <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-400">UP Score</span>
-                <span className="text-sm font-mono font-bold text-green-400">{safeFixed(results.upScore, 0)}</span>
-             </div>
-             <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-400">DOWN Score</span>
-                <span className="text-sm font-mono font-bold text-red-400">{safeFixed(results.downScore, 0)}</span>
-             </div>
-             
-             <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent my-3"></div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-gray-400">UP Score</span>
+              <span className="text-sm font-mono font-bold text-green-400">{safeFixed(results.upScore, 0)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-gray-400">DOWN Score</span>
+              <span className="text-sm font-mono font-bold text-red-400">{safeFixed(results.downScore, 0)}</span>
+            </div>
 
-             <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500 uppercase font-bold">Signal Alignment</span>
-                <span className="text-sm font-mono font-bold text-white">{safeFixed(results.alignment, 1)}%</span>
-             </div>
-             <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500 uppercase font-bold">Market Regime</span>
-                <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold border ${
-                   results.marketRegime === 'TRENDING' ? 'bg-purple-900/20 text-purple-400 border-purple-500/30' :
-                   results.marketRegime === 'VOLATILE' ? 'bg-orange-900/20 text-orange-400 border-orange-500/30' :
-                   'bg-gray-800 text-gray-400 border-gray-700'
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-800 to-transparent my-3"></div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500 uppercase font-bold">Signal Alignment</span>
+              <span className="text-sm font-mono font-bold text-white">{safeFixed(results.alignment, 1)}%</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500 uppercase font-bold">Market Regime</span>
+              <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold border ${results.marketRegime === 'TRENDING' ? 'bg-purple-900/20 text-purple-400 border-purple-500/30' :
+                results.marketRegime === 'VOLATILE' ? 'bg-orange-900/20 text-orange-400 border-orange-500/30' :
+                  'bg-gray-800 text-gray-400 border-gray-700'
                 }`}>{results.marketRegime || 'UNKNOWN'}</span>
-             </div>
+            </div>
           </div>
+
+          {results.btcCorrelation && (
+            <div className="bg-black/40 border border-gray-800/50 p-3 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded bg-gray-800/50 flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-cyber-cyan" />
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500 font-mono uppercase">Correlation</div>
+                  <div className="text-xs text-gray-200 font-bold">BTC/USDT Analysis</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${results.btcCorrelation === 'Positive' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                    results.btcCorrelation === 'Negative' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                      'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                  }`}>
+                  {results.btcCorrelation}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </BaseStep>
+  );
+};
+
+export const HedgeFundStep: React.FC<{
+  status: 'loading' | 'complete' | 'error';
+  audit?: HedgeFundAudit;
+  duration?: number;
+}> = ({ status, audit, duration }) => {
+  return (
+    <BaseStep
+      status={status}
+      title="Hedge Fund Audit"
+      icon={<ShieldAlert className="w-4 h-4" />}
+      duration={duration}
+    >
+      {status === 'loading' && <p className="text-xs text-gray-500 animate-pulse font-mono pl-1">Institutional safety & risk verification...</p>}
+
+      {status === 'complete' && !audit && (
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">Audit details archived/unavailable.</p>
+      )}
+
+      {audit && (
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-gray-800/50">
+            <div>
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Safety Score</div>
+              <div className="text-xs text-gray-400 font-mono">{audit.checksPassed} / {audit.totalChecks} Checks Passed</div>
+            </div>
+            <div className="flex flex-col items-end">
+              <div className="flex items-baseline gap-1">
+                <span className={`text-3xl font-black ${audit.score >= 70 ? 'text-green-500' : audit.score >= 40 ? 'text-yellow-500' : 'text-red-500'}`}>{audit.score}</span>
+                <span className="text-xs text-gray-500 font-mono">/ 100</span>
+              </div>
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border mt-1 ${audit.status === 'Pass' ? 'bg-green-900/20 text-green-400 border-green-500/30' : audit.status === 'Caution Required' ? 'bg-yellow-900/20 text-yellow-400 border-yellow-500/30' : 'bg-red-900/20 text-red-400 border-red-500/30'}`}>{audit.status}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider pl-1 font-mono">Validation Points</div>
+            {audit.points.map((pt, i) => (
+              <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 transition-colors border border-gray-800/30">
+                <div>
+                  <div className="text-xs font-bold text-gray-300">{pt.label}</div>
+                  <div className="text-[10px] text-gray-500 font-mono mt-0.5">{pt.value}</div>
+                </div>
+                {pt.passed ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Minus className="w-4 h-4 text-gray-500" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </BaseStep>
+  );
+};
+
+export const SentimentStep: React.FC<{
+  status: 'loading' | 'complete' | 'error';
+  sentiment?: SentimentAnalysis;
+  duration?: number;
+}> = ({ status, sentiment, duration }) => {
+  return (
+    <BaseStep
+      status={status}
+      title="Sentiment Intelligence"
+      icon={<Globe className="w-4 h-4" />}
+      duration={duration}
+    >
+      {status === 'loading' && <p className="text-xs text-gray-500 animate-pulse font-mono pl-1">Scanning global news sources...</p>}
+
+      {status === 'complete' && !sentiment && (
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">Sentiment details archived/unavailable.</p>
+      )}
+
+      {sentiment && (
+        <div className="space-y-4 pt-2">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 bg-black/20 p-3 rounded-lg border border-gray-800/50">
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">Headline Audit</div>
+              <div className="text-2xl font-black text-blue-400">{sentiment.articlesScanned}</div>
+              <div className="text-xs text-gray-400 font-mono">Key Sources Scanned</div>
+            </div>
+            <div className="flex-1 bg-black/20 p-3 rounded-lg border border-gray-800/50 flex flex-col justify-center items-center text-center">
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Consensus</div>
+              <div className={`text-sm font-bold uppercase px-2 py-1 rounded border mt-1 ${sentiment.consensus.includes('Bullish') ? 'bg-green-900/20 text-green-400 border-green-500/30' :
+                sentiment.consensus.includes('Bearish') ? 'bg-red-900/20 text-red-400 border-red-500/30' :
+                  'bg-gray-800 text-gray-400 border-gray-700'
+                }`}>
+                {sentiment.consensus}
+              </div>
+            </div>
+          </div>
+
+          {sentiment.narratives?.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider pl-1 font-mono">Dominant Narratives</div>
+              <div className="flex flex-wrap gap-2">
+                {sentiment.narratives.map((n, i) => (
+                  <div key={i} className="px-2 py-1 bg-gray-900 border border-gray-800 rounded text-xs text-gray-300 flex items-center gap-2">
+                    <span>{n.word}</span>
+                    <span className="text-[10px] text-gray-500 font-mono bg-black px-1 rounded">{n.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {sentiment.headlines?.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="max-h-48 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                {sentiment.headlines.map((hl, i) => (
+                  <a key={i} href={hl.url} target="_blank" rel="noopener noreferrer" className="block p-2 bg-white/5 hover:bg-white/10 transition-colors rounded border border-gray-800/30 group">
+                    <div className="text-xs text-blue-400 font-mono mb-1">#{i + 1} &bull; {hl.source}</div>
+                    <div className="text-xs text-gray-300 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">{hl.title}</div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </BaseStep>
@@ -307,11 +514,11 @@ export const AIAnalysisStep: React.FC<{
   duration?: number;
 }> = ({ status, result, partialThought, duration }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  
+
   // Auto-scroll when partial thought updates
   useEffect(() => {
     if (scrollRef.current) {
-       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [partialThought]);
 
@@ -319,9 +526,9 @@ export const AIAnalysisStep: React.FC<{
   const content = result?.thoughtProcess || partialThought;
 
   return (
-    <BaseStep 
-      status={status} 
-      title="AI Deep Analysis" 
+    <BaseStep
+      status={status}
+      title="AI Deep Analysis"
       icon={<Brain className="w-4 h-4" />}
       duration={duration}
     >
@@ -332,41 +539,40 @@ export const AIAnalysisStep: React.FC<{
       )}
 
       {status === 'complete' && !content && (
-         <p className="text-gray-500 text-xs pl-1 font-mono italic">AI thought process archived/unavailable.</p>
+        <p className="text-gray-500 text-xs pl-1 font-mono italic">AI thought process archived/unavailable.</p>
       )}
-      
+
       {content && (
         <div className="space-y-4">
-           {/* Thinking Header */}
-           <div className="flex items-center justify-between border-b border-gray-800/50 pb-2">
-              <div className="flex items-center gap-2">
-                <Brain className="w-3 h-3 text-purple-500" />
-                <span className="text-xs font-bold text-purple-100">AI Thought Process</span>
-              </div>
-              <span className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase transition-colors duration-300 ${
-                status === 'complete' 
-                  ? 'bg-green-900/20 text-green-300 border-green-500/30' 
-                  : 'bg-purple-900/20 text-purple-300 border-purple-500/30 animate-pulse'
+          {/* Thinking Header */}
+          <div className="flex items-center justify-between border-b border-gray-800/50 pb-2">
+            <div className="flex items-center gap-2">
+              <Brain className="w-3 h-3 text-purple-500" />
+              <span className="text-xs font-bold text-purple-100">AI Thought Process</span>
+            </div>
+            <span className={`text-[9px] px-2 py-0.5 rounded border font-mono uppercase transition-colors duration-300 ${status === 'complete'
+              ? 'bg-green-900/20 text-green-300 border-green-500/30'
+              : 'bg-purple-900/20 text-purple-300 border-purple-500/30 animate-pulse'
               }`}>
-                {status === 'complete' ? 'Analysis Complete' : 'Thinking Mode Active'}
-              </span>
-           </div>
-           
-           {/* Internal Monologue Content */}
-           <div 
-             ref={scrollRef}
-             className="bg-[#08080a] border border-gray-800/50 p-4 rounded-lg max-h-60 overflow-y-auto custom-scrollbar relative"
-           >
-             {/* Scanline effect */}
-             <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] opacity-10"></div>
-             
-             <p className="font-mono text-[11px] text-gray-400 leading-relaxed opacity-90 whitespace-pre-line relative z-10">
-               {content}
-               {status === 'loading' && (
-                 <span className="inline-block w-2 h-4 bg-purple-500 ml-1 animate-pulse align-middle"></span>
-               )}
-             </p>
-           </div>
+              {status === 'complete' ? 'Analysis Complete' : 'Gemini 3.1 Pro (Thinking Mode)'}
+            </span>
+          </div>
+
+          {/* Internal Monologue Content */}
+          <div
+            ref={scrollRef}
+            className="bg-[#08080a] border border-gray-800/50 p-4 rounded-lg max-h-60 overflow-y-auto custom-scrollbar relative"
+          >
+            {/* Scanline effect */}
+            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_2px,3px_100%] opacity-10"></div>
+
+            <p className="font-mono text-[11px] text-gray-400 leading-relaxed opacity-90 whitespace-pre-line relative z-10">
+              {content}
+              {status === 'loading' && (
+                <span className="inline-block w-2 h-4 bg-purple-500 ml-1 animate-pulse align-middle"></span>
+              )}
+            </p>
+          </div>
         </div>
       )}
     </BaseStep>
