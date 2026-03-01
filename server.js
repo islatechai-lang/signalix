@@ -263,34 +263,42 @@ app.post('/api/create-checkout', async (req, res) => {
       return res.status(500).json({ error: 'Server configuration error: Missing Whop credentials' });
     }
 
-    // 1. Find or create product
-    let productsList = await whopFetch(`/products?company_id=${companyId}`);
-    let product = productsList.data?.[0];
+    // 1. Get Plan (Either from ENV or searching)
+    let plan;
+    const planId = process.env.WHOP_PLAN_ID;
 
-    if (!product) {
-      product = await whopFetch('/products', 'POST', {
-        company_id: companyId,
-        name: 'Signalix Pro Terminal',
-        visibility: 'visible'
-      });
-    }
+    if (planId) {
+      console.log(`[Server] Using specific Whop Plan ID: ${planId}`);
+      plan = await whopFetch(`/plans/${planId}`);
+    } else {
+      // Fallback: Find or create product & plan dynamically
+      let productsList = await whopFetch(`/products?company_id=${companyId}`);
+      let product = productsList.data?.[0];
 
-    const productId = product.id;
+      if (!product) {
+        product = await whopFetch('/products', 'POST', {
+          company_id: companyId,
+          name: 'Signalix Pro Terminal',
+          visibility: 'visible'
+        });
+      }
 
-    // 2. Find or create plan (Pricing option)
-    let plansList = await whopFetch(`/plans?company_id=${companyId}&product_id=${productId}`);
-    let plan = plansList.data?.[0];
+      const productId = product.id;
 
-    if (!plan) {
-      plan = await whopFetch('/plans', 'POST', {
-        company_id: companyId,
-        product_id: productId,
-        name: 'Pro Monthly Access',
-        billing_period: 30,
-        initial_price: 35,
-        base_currency: 'USD',
-        plan_type: 'subscription'
-      });
+      let plansList = await whopFetch(`/plans?company_id=${companyId}&product_id=${productId}`);
+      plan = plansList.data?.[0];
+
+      if (!plan) {
+        plan = await whopFetch('/plans', 'POST', {
+          company_id: companyId,
+          product_id: productId,
+          name: 'Pro Monthly Access',
+          billing_period: 30,
+          initial_price: 35,
+          base_currency: 'USD',
+          plan_type: 'subscription'
+        });
+      }
     }
 
     let origin = process.env.BASE_URL;
