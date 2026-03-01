@@ -29,8 +29,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="glass-panel w-full max-w-md rounded-2xl p-8 relative border border-cyber-cyan/30 shadow-[0_0_50px_rgba(0,243,255,0.1)]">
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
         >
           <X className="w-6 h-6" />
@@ -38,7 +38,7 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
 
         <div className="text-center mb-8">
           <div className="w-12 h-12 bg-cyber-cyan/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyber-cyan/50 shadow-[0_0_15px_rgba(0,243,255,0.3)]">
-             <Zap className="w-6 h-6 text-cyber-cyan" />
+            <Zap className="w-6 h-6 text-cyber-cyan" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Upgrade to Pro</h2>
           <p className="text-gray-400 text-sm">Unlock the full power of the Neural Engine.</p>
@@ -65,8 +65,8 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
               </li>
             ))}
           </ul>
-          
-          <button 
+
+          <button
             onClick={handleSubscribe}
             disabled={loading}
             className="w-full py-3 bg-cyber-cyan hover:bg-cyan-400 text-black font-bold text-center rounded transition-all shadow-[0_0_20px_rgba(0,243,255,0.3)] flex items-center justify-center gap-2"
@@ -76,11 +76,11 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
                 <Loader2 className="w-4 h-4 animate-spin" /> Processing...
               </>
             ) : (
-              "Subscribe via Polar.sh"
+              "Subscribe via Whop"
             )}
           </button>
           <p className="text-center text-[10px] text-gray-500 mt-3">
-             Secure payment via Polar. You will be redirected.
+            Secure payment via Whop. You will be redirected.
           </p>
         </div>
       </div>

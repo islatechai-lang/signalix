@@ -24,7 +24,7 @@ app.use(express.static(path.join(__dirname, 'dist')));
 app.post('/api/log', (req, res) => {
   const { level, message, details } = req.body;
   const timestamp = new Date().toLocaleTimeString();
-  
+
   const color = level === 'error' ? '\x1b[31m' : level === 'warn' ? '\x1b[33m' : '\x1b[36m';
   const reset = '\x1b[0m';
 
@@ -33,7 +33,7 @@ app.post('/api/log', (req, res) => {
     if (typeof details === 'object') console.dir(details, { depth: null, colors: true });
     else console.log(details);
   }
-  
+
   res.sendStatus(200);
 });
 
@@ -46,7 +46,7 @@ const MODEL_CHAIN = [
 // Helper to reliably parse JSON even if the model adds markdown or junk
 const cleanAndParseJSON = (text) => {
   if (!text) return null;
-  
+
   // 1. Try direct parse
   try {
     return JSON.parse(text);
@@ -59,7 +59,7 @@ const cleanAndParseJSON = (text) => {
       // 3. Extract strictly between first { and last }
       const firstBrace = text.indexOf('{');
       const lastBrace = text.lastIndexOf('}');
-      
+
       if (firstBrace !== -1 && lastBrace !== -1) {
         cleaned = text.substring(firstBrace, lastBrace + 1);
         try {
@@ -75,9 +75,9 @@ const cleanAndParseJSON = (text) => {
 
 app.post('/api/analyze', async (req, res) => {
   const { pairName, timeframe, ohlc, indicators } = req.body;
-  
+
   // Clean Time log
-  const timeLog = new Date().toISOString().split('T')[1].substring(0,8);
+  const timeLog = new Date().toISOString().split('T')[1].substring(0, 8);
   console.log(`[${timeLog}] [Analysis] Starting for ${pairName} (${timeframe})...`);
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
@@ -91,7 +91,7 @@ app.post('/api/analyze', async (req, res) => {
 
   // Prepare condensed OHLC data
   const recentOHLC = ohlc.slice(-15).map(d => ({
-    t: new Date(d.time * 1000).toISOString().split('T')[1].substring(0,5),
+    t: new Date(d.time * 1000).toISOString().split('T')[1].substring(0, 5),
     o: d.open,
     h: d.high,
     l: d.low,
@@ -103,7 +103,7 @@ app.post('/api/analyze', async (req, res) => {
     You are SignalixAI, an elite AI trading engine. 
     Analyze the following market data for ${pairName} on the ${timeframe} timeframe.
     
-    Current Price: ${ohlc[ohlc.length-1].close}
+    Current Price: ${ohlc[ohlc.length - 1].close}
     
     Technical Indicators:
     - RSI (14): ${indicators.rsi.value}
@@ -141,7 +141,7 @@ app.post('/api/analyze', async (req, res) => {
     }
 
     const currentModel = MODEL_CHAIN[modelIndex];
-    
+
     try {
       const config = {
         responseMimeType: "application/json",
@@ -165,7 +165,7 @@ app.post('/api/analyze', async (req, res) => {
       };
 
       console.log(`[Server] Requesting ${currentModel} [${modelIndex + 1}/${MODEL_CHAIN.length}]...`);
-      
+
       const response = await ai.models.generateContent({
         model: currentModel,
         contents: prompt,
@@ -177,48 +177,48 @@ app.post('/api/analyze', async (req, res) => {
 
       // Robust Parsing
       const parsed = cleanAndParseJSON(resultText);
-      
+
       // Normalization & Enforcement
       if (parsed.confidence !== undefined) {
-         // Fix decimal confidence (e.g. 0.85 -> 85)
-         if (parsed.confidence <= 1 && parsed.confidence > 0) {
-             parsed.confidence = Math.round(parsed.confidence * 100);
-         }
+        // Fix decimal confidence (e.g. 0.85 -> 85)
+        if (parsed.confidence <= 1 && parsed.confidence > 0) {
+          parsed.confidence = Math.round(parsed.confidence * 100);
+        }
       }
 
       // --- HIGH CONFIDENCE ENFORCEMENT ---
       // If the AI gives a direction (UP or DOWN), we mathematically ensure
       // the confidence is between 92% and 99% to give the user authority.
       if (parsed.verdict === 'UP' || parsed.verdict === 'DOWN') {
-          if (parsed.confidence < 90) {
-              console.log(`[Server] Boosting confidence from ${parsed.confidence}% to High Confidence range.`);
-              // Map it to a random number between 92 and 98
-              parsed.confidence = Math.floor(Math.random() * (98 - 92 + 1)) + 92;
-          }
+        if (parsed.confidence < 90) {
+          console.log(`[Server] Boosting confidence from ${parsed.confidence}% to High Confidence range.`);
+          // Map it to a random number between 92 and 98
+          parsed.confidence = Math.floor(Math.random() * (98 - 92 + 1)) + 92;
+        }
       }
 
       console.log(`[Server] Success: ${currentModel} -> Verdict: ${parsed.verdict} (${parsed.confidence}%)`);
       return parsed;
 
     } catch (error) {
-       const errorMsg = error.message || "Unknown error";
-       
-       // Handle specific error types for better logging
-       let failReason = "Unknown";
-       if (errorMsg.includes("429") || errorMsg.includes("quota")) failReason = "Rate Limit/Quota";
-       else if (errorMsg.includes("JSON")) failReason = "JSON Parse Error";
-       else if (errorMsg.includes("503") || errorMsg.includes("500")) failReason = "Model Overloaded";
-       else failReason = errorMsg;
+      const errorMsg = error.message || "Unknown error";
 
-       console.warn(`[Server] Failed: ${currentModel} -> ${failReason}`);
-       
-       // Stop if it's an Auth error (no point retrying)
-       if (errorMsg.includes("API key") || errorMsg.includes("403")) {
-          throw new Error("Invalid API Key configuration.");
-       }
+      // Handle specific error types for better logging
+      let failReason = "Unknown";
+      if (errorMsg.includes("429") || errorMsg.includes("quota")) failReason = "Rate Limit/Quota";
+      else if (errorMsg.includes("JSON")) failReason = "JSON Parse Error";
+      else if (errorMsg.includes("503") || errorMsg.includes("500")) failReason = "Model Overloaded";
+      else failReason = errorMsg;
 
-       // Retry with next model
-       return tryGenerate(modelIndex + 1);
+      console.warn(`[Server] Failed: ${currentModel} -> ${failReason}`);
+
+      // Stop if it's an Auth error (no point retrying)
+      if (errorMsg.includes("API key") || errorMsg.includes("403")) {
+        throw new Error("Invalid API Key configuration.");
+      }
+
+      // Retry with next model
+      return tryGenerate(modelIndex + 1);
     }
   };
 
@@ -231,19 +231,68 @@ app.post('/api/analyze', async (req, res) => {
   }
 });
 
-// API Endpoint to create Polar Checkout
+// --- WHOP API HELPERS ---
+const whopFetch = async (endpoint, method = 'GET', body = null) => {
+  const token = process.env.WHOP_API_KEY;
+  const options = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    }
+  };
+  if (body) options.body = JSON.stringify(body);
+  const res = await fetch(`https://api.whop.com/api/v2${endpoint}`, options);
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`Whop API Error (${method} ${endpoint}):`, errorText);
+    throw new Error('Whop API request failed');
+  }
+  return await res.json();
+};
+
+// API Endpoint to create Whop Checkout
 app.post('/api/create-checkout', async (req, res) => {
   try {
     const { customerEmail, userId } = req.body;
-    const polarToken = process.env.POLAR_ACCESS_TOKEN;
-    
-    if (!polarToken) {
-      return res.status(500).json({ error: 'Server configuration error: Missing Payment Token' });
+    const whopKey = process.env.WHOP_API_KEY;
+    const companyId = process.env.WHOP_COMPANY_ID;
+
+    if (!whopKey || !companyId) {
+      return res.status(500).json({ error: 'Server configuration error: Missing Whop credentials' });
     }
 
-    // Prefer environment variable for Product ID in production, fallback to hardcoded default
-    const productId = process.env.POLAR_PRODUCT_ID || '6f406ae3-6f82-4a40-bd37-c5dc2e64ddfd'; 
-    
+    // 1. Find or create product
+    let productsList = await whopFetch(`/products?company_id=${companyId}`);
+    let product = productsList.data?.[0];
+
+    if (!product) {
+      product = await whopFetch('/products', 'POST', {
+        company_id: companyId,
+        name: 'Signalix Pro Terminal',
+        visibility: 'visible'
+      });
+    }
+
+    const productId = product.id;
+
+    // 2. Find or create plan (Pricing option)
+    let plansList = await whopFetch(`/plans?company_id=${companyId}&product_id=${productId}`);
+    let plan = plansList.data?.[0];
+
+    if (!plan) {
+      plan = await whopFetch('/plans', 'POST', {
+        company_id: companyId,
+        product_id: productId,
+        name: 'Pro Monthly Access',
+        billing_period: 30,
+        initial_price: 35,
+        base_currency: 'USD',
+        plan_type: 'subscription'
+      });
+    }
+
     let origin = process.env.BASE_URL;
     if (!origin) {
       if (req.headers.origin) {
@@ -255,106 +304,83 @@ app.post('/api/create-checkout', async (req, res) => {
       }
     }
 
-    // PRODUCTION ENDPOINT: api.polar.sh
-    const response = await fetch('https://api.polar.sh/v1/checkouts/', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${polarToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        product_id: productId,
-        success_url: `${origin}?payment=success`,
-        customer_email: customerEmail,
-        metadata: { userId: userId }
-      })
-    });
+    const successUrl = `${origin}?payment=success`;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Polar API Error:', errorText);
-      return res.status(response.status).json({ error: 'Failed to create checkout' });
+    // The plan gives us a purchase_url. We can append params for email prefilling and redirect.
+    let checkoutUrl = plan.purchase_url || plan.direct_link || plan.release_method?.checkout_url;
+
+    if (!checkoutUrl) {
+      throw new Error("Unable to retrieve checkout URL from the Whop plan.");
     }
 
-    const data = await response.json();
-    res.json(data);
+    // Append query params. Whop allows pre-filling email.
+    if (checkoutUrl.includes('?')) {
+      checkoutUrl += `&email=${encodeURIComponent(customerEmail)}&success_url=${encodeURIComponent(successUrl)}`;
+    } else {
+      checkoutUrl += `?email=${encodeURIComponent(customerEmail)}&success_url=${encodeURIComponent(successUrl)}`;
+    }
+
+    res.json({ url: checkoutUrl });
   } catch (error) {
-    console.error('Server Error:', error);
+    console.error('Server Error (Create Checkout):', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// --- SUBSCRIPTION MANAGEMENT ---
-
-// Helper to fetch Polar Data
-const fetchPolarData = async (email, polarToken) => {
-    // PRODUCTION ENDPOINT: api.polar.sh
-    // 1. Find Customer by Email
-    const customerSearch = await fetch(`https://api.polar.sh/v1/customers?email=${encodeURIComponent(email)}`, {
-      headers: { 'Authorization': `Bearer ${polarToken}` }
-    });
-
-    if (!customerSearch.ok) throw new Error('Failed to search customers');
-    
-    const customers = await customerSearch.json();
-    const customer = customers.items?.[0];
-
-    if (!customer) return null;
-
-    // 2. List Subscriptions for Customer
-    const subResponse = await fetch(`https://api.polar.sh/v1/subscriptions?customer_id=${customer.id}`, {
-      headers: { 'Authorization': `Bearer ${polarToken}` }
-    });
-
-    if (!subResponse.ok) throw new Error('Failed to fetch subscriptions');
-
-    return await subResponse.json();
-};
+// --- SUBSCRIPTION MANAGEMENT via Whop ---
 
 // GET /api/subscription?email=... (For displaying details)
 app.get('/api/subscription', async (req, res) => {
   const { email } = req.query;
-  const polarToken = process.env.POLAR_ACCESS_TOKEN;
+  const companyId = process.env.WHOP_COMPANY_ID;
 
-  if (!polarToken || !email) {
+  if (!process.env.WHOP_API_KEY || !email) {
     return res.status(400).json({ error: 'Missing token or email' });
   }
 
   try {
-    const subs = await fetchPolarData(email, polarToken);
+    // Check memberships for this email across the company
+    const membersRes = await whopFetch(`/memberships?company_id=${companyId}&email=${encodeURIComponent(email)}`);
+    const memberships = membersRes.data || [];
 
-    if (!subs) {
-      return res.json({ active: false, message: 'No customer found' });
+    if (memberships.length === 0) {
+      return res.json({ found: false, message: 'No customer found' });
     }
 
-    // Find active subscription
-    const activeSub = subs.items?.find(s => s.status === 'active');
+    // Find active or trialing
+    const activeSub = memberships.find(m => m.status === 'active' || m.status === 'trialing');
 
     if (activeSub) {
-       res.json({
-         found: true,
-         id: activeSub.id,
-         status: activeSub.status,
-         current_period_end: activeSub.current_period_end,
-         cancel_at_period_end: activeSub.cancel_at_period_end,
-         product_id: activeSub.product_id,
-         amount: activeSub.amount,
-         currency: activeSub.currency
-       });
+      res.json({
+        found: true,
+        id: activeSub.id,
+        status: activeSub.status,
+        current_period_end: activeSub.valid_until, // Whop uses valid_until
+        cancel_at_period_end: activeSub.cancel_at_period_end,
+        amount: activeSub.plan?.initial_price,
+        currency: activeSub.plan?.base_currency
+      });
     } else {
-       // Check for any canceled but not yet expired
-       const anySub = subs.items?.[0];
-       if (anySub) {
-         res.json({
-           found: true,
-           id: anySub.id,
-           status: anySub.status,
-           current_period_end: anySub.current_period_end,
-           cancel_at_period_end: anySub.cancel_at_period_end
-         });
-       } else {
-         res.json({ found: false });
-       }
+      // Check for any canceled but valid till end
+      const canceledButValid = memberships.find(m => m.status === 'canceled' && m.valid_until && new Date(m.valid_until) > new Date());
+
+      if (canceledButValid) {
+        res.json({
+          found: true,
+          id: canceledButValid.id,
+          status: canceledButValid.status,
+          current_period_end: canceledButValid.valid_until,
+          cancel_at_period_end: true
+        });
+      } else {
+        const latestExp = memberships[0];
+        res.json({
+          found: true,
+          id: latestExp.id,
+          status: latestExp.status,
+          current_period_end: latestExp.valid_until
+        });
+      }
     }
 
   } catch (error) {
@@ -366,42 +392,28 @@ app.get('/api/subscription', async (req, res) => {
 // POST /api/sync-subscription (For logic check: Is User Pro?)
 app.post('/api/sync-subscription', async (req, res) => {
   const { email } = req.body;
-  const polarToken = process.env.POLAR_ACCESS_TOKEN;
+  const companyId = process.env.WHOP_COMPANY_ID;
 
-  if (!polarToken || !email) {
+  if (!process.env.WHOP_API_KEY || !email) {
     return res.status(400).json({ error: 'Missing Data' });
   }
 
   try {
-    const subs = await fetchPolarData(email, polarToken);
+    const membersRes = await whopFetch(`/memberships?company_id=${companyId}&email=${encodeURIComponent(email)}`);
+    const memberships = membersRes.data || [];
 
-    if (!subs || !subs.items || subs.items.length === 0) {
+    if (memberships.length === 0) {
       return res.json({ isPro: false });
     }
 
-    // Check if any subscription is valid
-    // Valid = Status is 'active' OR 'trialing'
-    // OR Status is 'canceled' but current_period_end > now
-    
     const now = new Date();
-    
-    const validSub = subs.items.find(s => {
-      if (s.status === 'active' || s.status === 'trialing') return true;
-      
-      if (s.current_period_end) {
-        const endDate = new Date(s.current_period_end);
-        if (endDate > now) return true;
-      }
-      
+    const validSub = memberships.find(m => {
+      if (m.status === 'active' || m.status === 'trialing') return true;
+      if (m.valid_until && new Date(m.valid_until) > now) return true;
       return false;
     });
 
-    if (validSub) {
-      res.json({ isPro: true });
-    } else {
-      res.json({ isPro: false });
-    }
-
+    res.json({ isPro: !!validSub });
   } catch (error) {
     console.error('Sync Error:', error);
     res.status(500).json({ error: 'Sync failed' });
@@ -411,34 +423,14 @@ app.post('/api/sync-subscription', async (req, res) => {
 // POST /api/subscription/cancel
 app.post('/api/subscription/cancel', async (req, res) => {
   const { subscriptionId } = req.body;
-  const polarToken = process.env.POLAR_ACCESS_TOKEN;
 
-  if (!polarToken || !subscriptionId) {
+  if (!process.env.WHOP_API_KEY || !subscriptionId) {
     return res.status(400).json({ error: 'Missing Data' });
   }
 
   try {
-    // PRODUCTION ENDPOINT: api.polar.sh
-    const response = await fetch(`https://api.polar.sh/v1/subscriptions/${subscriptionId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${polarToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        cancel_at_period_end: true
-      })
-    });
-
-    if (!response.ok) {
-      const txt = await response.text();
-      console.error('Cancel Error:', txt);
-      return res.status(response.status).json({ error: 'Failed to cancel' });
-    }
-
-    const result = await response.json();
+    const result = await whopFetch(`/memberships/${subscriptionId}/cancel`, 'POST');
     res.json(result);
-
   } catch (error) {
     console.error('Cancellation Exception:', error);
     res.status(500).json({ error: error.message });
