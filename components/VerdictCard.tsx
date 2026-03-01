@@ -120,7 +120,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
         {isBullish ? <TrendingUp className="w-48 h-48" /> : isBearish ? <TrendingUp className="w-48 h-48 rotate-180" /> : <ShieldAlert className="w-48 h-48" />}
       </div>
 
-      <div className="relative z-10 w-full">
+      <div className="p-6 pb-4 relative z-10 w-full">
         <h3 className="text-gray-400 text-[10px] font-mono uppercase tracking-widest mb-1 opacity-70">AI Predicted Direction</h3>
         <div className="flex items-center justify-between">
           <div className={`text-4xl md:text-5xl font-black tracking-tighter ${mainColor} flex items-center gap-2 pr-2`}>
