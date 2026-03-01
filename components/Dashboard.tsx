@@ -601,9 +601,10 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         <div className="absolute top-4 right-4 z-30 hidden lg:block">
           <button
             onClick={resetSession}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0a0a0f]/80 backdrop-blur border border-gray-800 rounded-lg hover:border-gray-600 hover:text-white text-gray-400 text-xs font-mono uppercase tracking-wide transition-all"
+            className="p-2 bg-[#0a0a0f]/80 backdrop-blur border border-gray-800 rounded-lg hover:border-gray-600 hover:text-white text-gray-400 transition-all shadow-lg"
+            title="New Scan"
           >
-            <RefreshCw className="w-3 h-3" /> New Scan
+            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
 
