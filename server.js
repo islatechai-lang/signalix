@@ -80,12 +80,14 @@ app.post('/api/analyze', async (req, res) => {
   const timeLog = new Date().toISOString().split('T')[1].substring(0,8);
   console.log(`[${timeLog}] [Analysis] Starting for ${pairName} (${timeframe})...`);
 
-  if (!process.env.API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+  if (!apiKey) {
     console.error("[Server] Critical Error: API Key is missing.");
     return res.status(500).json({ error: "Server configuration error: API Key missing" });
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Prepare condensed OHLC data
   const recentOHLC = ohlc.slice(-15).map(d => ({
