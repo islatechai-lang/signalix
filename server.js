@@ -247,6 +247,16 @@ const whopFetch = async (endpoint, method = 'GET', body = null) => {
   if (!res.ok) {
     const errorText = await res.text();
     console.error(`Whop API Error (${method} ${endpoint}):`, errorText);
+    try {
+      const parsed = JSON.parse(errorText);
+      if (parsed.error && parsed.error.message) {
+        throw new Error(parsed.error.message);
+      }
+    } catch (e) {
+      if (e.message !== errorText && !errorText.startsWith('<')) {
+        throw new Error(errorText);
+      }
+    }
     throw new Error('Whop API request failed');
   }
   return await res.json();
@@ -431,7 +441,8 @@ app.post('/api/subscription/cancel', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Cancellation Exception:', error);
-    res.status(500).json({ error: error.message });
+    // Try to pass the specific Whop error if available
+    res.status(500).json({ error: error.message || 'Failed to cancel subscription' });
   }
 });
 

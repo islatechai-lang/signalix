@@ -36,8 +36,8 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, 
          // Refresh
          const updated = await paymentService.getSubscription(user.email);
          setSub(updated);
-      } catch (e) {
-         setError("Cancellation failed. Please try again.");
+      } catch (e: any) {
+         setError(e.message || "Cancellation failed. Please try again.");
       } finally {
          setProcessingCancel(false);
       }
@@ -96,15 +96,17 @@ const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, onClose, 
                      </div>
                      <div className="text-2xl font-mono font-bold text-white">PRO TIER</div>
                      <div className="text-xs text-gray-400 mt-1">
-                        {sub.cancel_at_period_end
-                           ? `Access ends on ${new Date(sub.current_period_end || '').toLocaleDateString()}`
-                           : `Renews on ${new Date(sub.current_period_end || '').toLocaleDateString()}`
+                        {!sub.current_period_end
+                           ? "Lifetime / One-time Access"
+                           : sub.cancel_at_period_end
+                              ? `Access ends on ${new Date(sub.current_period_end).toLocaleDateString()}`
+                              : `Renews on ${new Date(sub.current_period_end).toLocaleDateString()}`
                         }
                      </div>
                   </div>
 
                   {/* Actions */}
-                  {!sub.cancel_at_period_end && (
+                  {!sub.cancel_at_period_end && sub.current_period_end && (
                      <div className="pt-2">
                         <button
                            onClick={handleCancel}
