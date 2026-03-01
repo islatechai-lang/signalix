@@ -254,28 +254,26 @@ const whopFetch = async (endpoint, method = 'GET', body = null) => {
 
 // API Endpoint to create Whop Checkout
 app.post('/api/create-checkout', async (req, res) => {
+  console.log(`[Server] POST /api/create-checkout received request body:`, req.body);
   try {
     const { customerEmail, userId } = req.body;
     const whopKey = process.env.WHOP_API_KEY;
     const companyId = process.env.WHOP_COMPANY_ID;
 
     if (!whopKey || !companyId) {
+      console.error('[Server] ERROR: Missing Whop credentials in .env');
       return res.status(500).json({ error: 'Server configuration error: Missing Whop credentials' });
     }
 
-    // 1. Get Plan (Either from ENV or searching)
-    let plan;
-    const planId = process.env.WHOP_PLAN_ID;
-
-    if (planId) {
-      console.log(`[Server] Using specific Whop Plan ID: ${planId}`);
-      plan = await whopFetch(`/plans/${planId}`);
-    } else {
-      // Fallback: Find or create product & plan dynamically
+    // 1. Get Plan ID
+    let planId = process.env.WHOP_PLAN_ID;
+    if (!planId) {
+      console.log(`[Server] No WHOP_PLAN_ID in env, searching for products...`);
       let productsList = await whopFetch(`/products?company_id=${companyId}`);
       let product = productsList.data?.[0];
 
       if (!product) {
+        console.log(`[Server] No product found, creating one...`);
         product = await whopFetch('/products', 'POST', {
           company_id: companyId,
           name: 'Signalix Pro Terminal',
@@ -284,11 +282,11 @@ app.post('/api/create-checkout', async (req, res) => {
       }
 
       const productId = product.id;
-
       let plansList = await whopFetch(`/plans?company_id=${companyId}&product_id=${productId}`);
-      plan = plansList.data?.[0];
+      let plan = plansList.data?.[0];
 
       if (!plan) {
+        console.log(`[Server] No plan found, creating one...`);
         plan = await whopFetch('/plans', 'POST', {
           company_id: companyId,
           product_id: productId,
@@ -299,6 +297,7 @@ app.post('/api/create-checkout', async (req, res) => {
           plan_type: 'subscription'
         });
       }
+      planId = plan.id;
     }
 
     let origin = process.env.BASE_URL;
@@ -313,20 +312,18 @@ app.post('/api/create-checkout', async (req, res) => {
     }
 
     const successUrl = `${origin}?payment=success`;
+    console.log(`[Server] Creating checkout configuration for Plan: ${planId}, Success URL: ${successUrl}`);
 
-    // The plan gives us a purchase_url. We can append params for email prefilling and redirect.
-    let checkoutUrl = plan.purchase_url || plan.direct_link || plan.release_method?.checkout_url;
+    // Use /checkout_configurations for reliable redirects and pre-filling
+    const checkoutConfig = await whopFetch('/checkout_configurations', 'POST', {
+      plan_id: planId,
+      mode: 'subscription', // Required field
+      redirect_url: successUrl,
+      customer_email: customerEmail
+    });
 
-    if (!checkoutUrl) {
-      throw new Error("Unable to retrieve checkout URL from the Whop plan.");
-    }
-
-    // Append query params. Whop allows pre-filling email.
-    if (checkoutUrl.includes('?')) {
-      checkoutUrl += `&email=${encodeURIComponent(customerEmail)}&success_url=${encodeURIComponent(successUrl)}`;
-    } else {
-      checkoutUrl += `?email=${encodeURIComponent(customerEmail)}&success_url=${encodeURIComponent(successUrl)}`;
-    }
+    const checkoutUrl = checkoutConfig.purchase_url;
+    console.log(`[Server] Success! Generated checkout URL: ${checkoutUrl}`);
 
     res.json({ url: checkoutUrl });
   } catch (error) {
@@ -347,9 +344,11 @@ app.get('/api/subscription', async (req, res) => {
   }
 
   try {
+    console.log(`[Server] Fetching Whop memberships for: ${email}`);
     // Check memberships for this email across the company
     const membersRes = await whopFetch(`/memberships?company_id=${companyId}&email=${encodeURIComponent(email)}`);
     const memberships = membersRes.data || [];
+    console.log(`[Server] Found ${memberships.length} memberships for ${email}`);
 
     if (memberships.length === 0) {
       return res.json({ found: false, message: 'No customer found' });
@@ -370,7 +369,8 @@ app.get('/api/subscription', async (req, res) => {
       });
     } else {
       // Check for any canceled but valid till end
-      const canceledButValid = memberships.find(m => m.status === 'canceled' && m.valid_until && new Date(m.valid_until) > new Date());
+      const now = new Date();
+      const canceledButValid = memberships.find(m => m.status === 'canceled' && m.valid_until && new Date(m.valid_until) > now);
 
       if (canceledButValid) {
         res.json({
@@ -407,8 +407,14 @@ app.post('/api/sync-subscription', async (req, res) => {
   }
 
   try {
+    console.log(`[Server] Syncing Whop Pro status for: ${email}`);
     const membersRes = await whopFetch(`/memberships?company_id=${companyId}&email=${encodeURIComponent(email)}`);
     const memberships = membersRes.data || [];
+
+    console.log(`[Server] Memberships data size: ${memberships.length}`);
+    if (memberships.length > 0) {
+      console.log(`[Server] First membership status: ${memberships[0].status}, Valid until: ${memberships[0].valid_until}`);
+    }
 
     if (memberships.length === 0) {
       return res.json({ isPro: false });
@@ -416,11 +422,14 @@ app.post('/api/sync-subscription', async (req, res) => {
 
     const now = new Date();
     const validSub = memberships.find(m => {
-      if (m.status === 'active' || m.status === 'trialing') return true;
+      // Check for active status
+      if (m.status === 'active' || m.status === 'trialing' || m.status === 'free') return true;
+      // also check if valid_until is in the future
       if (m.valid_until && new Date(m.valid_until) > now) return true;
       return false;
     });
 
+    console.log(`[Server] Result for ${email}: isPro = ${!!validSub}`);
     res.json({ isPro: !!validSub });
   } catch (error) {
     console.error('Sync Error:', error);
