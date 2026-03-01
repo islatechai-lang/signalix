@@ -102,8 +102,7 @@ app.post('/api/analyze', async (req, res) => {
   const { hedgeFund, sentiment } = req.body;
 
   const prompt = `
-    You are SignalixAI (v2.4.0-alpha), an institutional-grade market analysis engine.
-    Operational Mode: Gemini 3.1 Pro (Thinking Mode).
+    You are an institutional-grade market analysis engine.
     
     Analyze the following multi-layer data for ${pairName} on the ${timeframe} timeframe.
     

@@ -417,14 +417,14 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       await wait(2000); // Simulate scanning sources
 
       // Process news into our format
-      const headlines = rawNews.slice(0, 10).map((n: any) => ({
+      const headlines = rawNews.slice(0, 50).map((n: any) => ({
         id: n.id,
         title: n.title,
         url: n.url,
         source: n.source
       }));
 
-      // Count words for narratives (simple)
+      // Count words for narratives (using full 50 headlines for better accuracy)
       const keywords = ['Bitcoin', 'ETF', 'Solana', 'Bullish', 'Bearish', 'Growth', 'Crash', 'Support', 'Resistance', 'Liquidity', 'DeFi'];
       const combinedTitles = headlines.map((h: any) => h.title).join(' ');
       const narratives = keywords.map(kw => ({
