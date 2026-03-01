@@ -1,7 +1,7 @@
 import { CryptoPair } from './types';
 
 // Read from environment variable (Vite prefix required) or fallback to the provided key
-export const CRYPTOCOMPARE_API_KEY = (import.meta as any).env?.VITE_CRYPTOCOMPARE_API_KEY || '8a639309466b93ee7cbfafaae16279eb22cffe30d1c68a25d0047d2a77d43ab2';
+export const CRYPTOCOMPARE_API_KEY = (import.meta as any).env?.VITE_CRYPTOCOMPARE_API_KEY || '';
 export const CRYPTOCOMPARE_API_BASE = 'https://min-api.cryptocompare.com/data/v2';
 
 export const SUPPORTED_PAIRS: CryptoPair[] = [
@@ -23,7 +23,7 @@ export const SUPPORTED_PAIRS: CryptoPair[] = [
   { symbol: 'RNDR/USDT', base: 'RNDR', quote: 'USDT', name: 'Render', type: 'CRYPTO' },
   { symbol: 'WLD/USDT', base: 'WLD', quote: 'USDT', name: 'Worldcoin', type: 'CRYPTO' },
   { symbol: 'GRT/USDT', base: 'GRT', quote: 'USDT', name: 'The Graph', type: 'CRYPTO' },
-  
+
   // --- LAYER 1 & 2 ---
   { symbol: 'SUI/USDT', base: 'SUI', quote: 'USDT', name: 'Sui', type: 'CRYPTO' },
   { symbol: 'SEI/USDT', base: 'SEI', quote: 'USDT', name: 'Sei', type: 'CRYPTO' },
@@ -99,19 +99,19 @@ export const TIMEFRAMES: TimeframeConfig[] = [
   { label: '1 Min', value: '1m', limit: 200, apiValue: 'histominute', aggregate: 1, category: 'SCALP' },
   { label: '3 Min', value: '3m', limit: 200, apiValue: 'histominute', aggregate: 3, category: 'SCALP' },
   { label: '5 Min', value: '5m', limit: 200, apiValue: 'histominute', aggregate: 5, category: 'SCALP' },
-  
+
   // Day Trading (15m - 1h)
   { label: '15 Min', value: '15m', limit: 200, apiValue: 'histominute', aggregate: 15, category: 'DAY' },
   { label: '30 Min', value: '30m', limit: 200, apiValue: 'histominute', aggregate: 30, category: 'DAY' },
   { label: '1 Hour', value: '1h', limit: 200, apiValue: 'histohour', aggregate: 1, category: 'DAY' },
-  
+
   // Swing Trading (2h - 1d)
   { label: '2 Hours', value: '2h', limit: 200, apiValue: 'histohour', aggregate: 2, category: 'SWING' },
   { label: '4 Hours', value: '4h', limit: 200, apiValue: 'histohour', aggregate: 4, category: 'SWING' },
   { label: '8 Hours', value: '8h', limit: 200, apiValue: 'histohour', aggregate: 8, category: 'SWING' },
   { label: '12 Hours', value: '12h', limit: 200, apiValue: 'histohour', aggregate: 12, category: 'SWING' },
   { label: '1 Day', value: '1d', limit: 200, apiValue: 'histoday', aggregate: 1, category: 'SWING' },
-  
+
   // Position Trading (3d - 1w)
   { label: '3 Days', value: '3d', limit: 200, apiValue: 'histoday', aggregate: 3, category: 'POSITION' },
   { label: '1 Week', value: '1w', limit: 200, apiValue: 'histoday', aggregate: 7, category: 'POSITION' },
