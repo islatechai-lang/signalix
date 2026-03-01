@@ -11,7 +11,7 @@ export interface SubscriptionDetails {
 }
 
 export const paymentService = {
-  async startCheckout(user: UserProfile) {
+  async startCheckout(user: UserProfile): Promise<string> {
     try {
       const response = await fetch('/api/create-checkout', {
         method: 'POST',
@@ -29,11 +29,11 @@ export const paymentService = {
       }
 
       const data = await response.json();
-      
-      if (data.url) {
-        window.location.href = data.url;
+
+      if (data.planId) {
+        return data.planId;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No planId returned');
       }
     } catch (error) {
       console.error('Checkout error:', error);
