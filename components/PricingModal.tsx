@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { X, Check, Zap, Loader2, ArrowLeft } from 'lucide-react';
 import { UserProfile } from '../types';
 import { paymentService } from '../services/paymentService';
