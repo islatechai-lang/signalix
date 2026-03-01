@@ -115,28 +115,48 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
         </div>
       </div>
 
-      {/* Top Header: Verdict & Score */}
-      <div className="p-6 pb-4 flex flex-col justify-between items-start gap-4 relative">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          {isBullish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32" /> : isBearish ? <TrendingUp className="w-24 h-24 md:w-32 md:h-32 rotate-180" /> : <ShieldAlert className="w-24 h-24 md:w-32 md:h-32" />}
-        </div>
+      {/* Background Icon Decoration - Subtle and Correctly Placed */}
+      <div className="absolute top-[-15px] right-[-15px] p-4 opacity-[0.02] pointer-events-none transform rotate-[15deg] scale-75">
+        {isBullish ? <TrendingUp className="w-48 h-48" /> : isBearish ? <TrendingUp className="w-48 h-48 rotate-180" /> : <ShieldAlert className="w-48 h-48" />}
+      </div>
 
-        <div className="relative z-10 w-full">
-          <h3 className="text-gray-400 text-[10px] font-mono uppercase tracking-widest mb-1 opacity-70">AI Predicted Direction</h3>
-          <div className="flex items-center justify-between">
-            <div className={`text-4xl md:text-5xl font-black tracking-tighter ${mainColor} flex items-center gap-2 pr-2`}>
-              {isBullish && <ArrowUpRight className="w-10 h-10 md:w-12 md:h-12" />}
-              {isBearish && <ArrowDownRight className="w-10 h-10 md:w-12 md:h-12" />}
-              {!isBullish && !isBearish && <Minus className="w-10 h-10 md:w-12 md:h-12" />}
-              <span className="truncate">{result.verdict === 'NEUTRAL' ? 'NEUTRAL / NO TRADE' : result.verdict}</span>
-            </div>
+      <div className="relative z-10 w-full">
+        <h3 className="text-gray-400 text-[10px] font-mono uppercase tracking-widest mb-1 opacity-70">AI Predicted Direction</h3>
+        <div className="flex items-center justify-between">
+          <div className={`text-4xl md:text-5xl font-black tracking-tighter ${mainColor} flex items-center gap-2 pr-2`}>
+            {isBullish && <ArrowUpRight className="w-10 h-10 md:w-12 md:h-12" />}
+            {isBearish && <ArrowDownRight className="w-10 h-10 md:w-12 md:h-12" />}
+            {!isBullish && !isBearish && <Minus className="w-10 h-10 md:w-12 md:h-12" />}
+            <span className="truncate">{result.verdict === 'NEUTRAL' ? 'NEUTRAL / NO TRADE' : result.verdict}</span>
+          </div>
 
-            <div className="flex items-end flex-col shrink-0">
-              <span className={`text-4xl md:text-5xl font-mono font-bold ${result.confidence >= 90 ? 'text-cyber-cyan' : 'text-gray-300'}`}>
-                {result.confidence}%
-              </span>
+          <div className="flex items-end flex-col shrink-0">
+            <div className="flex items-center gap-1.5 mb-1 group relative cursor-help">
               <span className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Confidence</span>
+              <div className="w-3.5 h-3.5 rounded-full border border-gray-700 flex items-center justify-center text-[8px] text-gray-400 hover:text-cyber-cyan hover:border-cyber-cyan transition-colors">?</div>
+
+              {/* Confidence Legend Tooltip */}
+              <div className="absolute bottom-full right-0 mb-3 w-48 bg-[#0a0a0f] border border-gray-800 rounded-lg p-3 shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 transition-all z-50">
+                <div className="text-[10px] font-bold text-purple-500 uppercase tracking-widest mb-2 border-b border-gray-800 pb-1">Confidence Scale</div>
+                <div className="space-y-2 font-mono text-[9px]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">80-85%:</span>
+                    <span className="text-gray-300 font-bold tracking-tighter">MODERATE</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">86-92%:</span>
+                    <span className="text-gray-300 font-bold tracking-tighter">STRONG</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">93-99%:</span>
+                    <span className="text-cyber-green font-bold tracking-tighter">EXCEPTIONAL</span>
+                  </div>
+                </div>
+              </div>
             </div>
+            <span className={`text-4xl md:text-5xl font-mono font-bold ${result.confidence >= 93 ? 'text-cyber-green' : result.confidence >= 86 ? 'text-cyber-cyan' : 'text-gray-300'}`}>
+              {result.confidence}%
+            </span>
           </div>
         </div>
       </div>
@@ -175,7 +195,7 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
           <div className="mb-6 border border-gray-800/50 rounded-lg overflow-hidden bg-[#0b0b10] shadow-inner">
             <div className="p-2 border-b border-gray-800/50 flex items-center gap-2 text-gray-400 bg-black/20">
               <BarChart2 className="w-3 h-3 text-cyber-cyan" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Live Chart: {pair.base}/{pair.quote}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider">Live Chart: {pair?.base}/{pair?.quote}</span>
             </div>
             <div
               ref={containerRef}
@@ -201,20 +221,29 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
             <h4 className="flex items-center gap-2 text-cyber-magenta text-xs font-bold uppercase mb-3">
               <Target className="w-3 h-3" /> Trade Targets
             </h4>
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between items-center bg-black/20 p-2 rounded">
-                <span className="text-gray-500 font-bold tracking-wide">ENTRY</span>
-                <span className="text-gray-200 font-mono">{result.entryZone || 'MARKET'}</span>
+            {result.verdict === 'NEUTRAL' ? (
+              <div className="h-[90px] flex items-center justify-center text-center px-2 bg-black/20 rounded border border-dashed border-gray-800">
+                <p className="text-[10px] text-gray-500 font-mono leading-relaxed">
+                  No actionable trade setup detected.<br />
+                  <span className="text-cyber-cyan/60">Waiting for a higher-confidence entry.</span>
+                </p>
               </div>
-              <div className="flex justify-between items-center bg-black/20 p-2 rounded">
-                <span className="text-gray-500 font-bold tracking-wide">TARGET</span>
-                <span className="text-cyber-green font-mono">{result.targetZone || 'OPEN'}</span>
+            ) : (
+              <div className="space-y-2.5 text-xs">
+                <div className="flex justify-between items-center bg-black/20 p-2 rounded">
+                  <span className="text-gray-500 font-bold tracking-wide">ENTRY</span>
+                  <span className="text-gray-200 font-mono">{result.entryZone || 'MARKET'}</span>
+                </div>
+                <div className="flex justify-between items-center bg-black/20 p-2 rounded">
+                  <span className="text-gray-500 font-bold tracking-wide">TARGET</span>
+                  <span className="text-cyber-green font-mono">{result.targetZone || 'OPEN'}</span>
+                </div>
+                <div className="flex justify-between items-center bg-black/20 p-2 rounded">
+                  <span className="text-gray-500 font-bold tracking-wide">STOP</span>
+                  <span className="text-cyber-red font-mono">{result.stopLoss || 'N/A'}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center bg-black/20 p-2 rounded">
-                <span className="text-gray-500 font-bold tracking-wide">STOP</span>
-                <span className="text-cyber-red font-mono">{result.stopLoss || 'N/A'}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="bg-gray-900/30 p-4 rounded border border-gray-800/50 hover:bg-gray-900/50 transition-colors">
@@ -228,7 +257,6 @@ const VerdictCard: React.FC<VerdictCardProps> = ({ result, pair }) => {
             </ul>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -125,17 +125,22 @@ app.post('/api/analyze', async (req, res) => {
     - Consensus: ${sentiment?.consensus || 'Neutral'}
     - Narratives: ${JSON.stringify(sentiment?.narratives || [])}
     
-    [PRICE ACTION (15 CANDLES)]
-    ${JSON.stringify(recentOHLC)}
+    [PRICE ACTION (30 CANDLES)]
+    ${JSON.stringify(req.body.ohlc.slice(-30))}
+    
+    [MARKET STATS (24H)]
+    - 24h High: ${req.body.ohlc.reduce((max, p) => p.high > max ? p.high : max, 0)}
+    - 24h Low: ${req.body.ohlc.reduce((min, p) => min === 0 || p.low < min ? p.low : min, 0)}
     
     [GOAL]
     Provide a robust, high-accuracy analysis. Focus on institutional safety.
-    
-    [CRITICAL RULES]
-    1. STRICT NEUTRALITY: If market is ranging, choppy, or the Hedge Fund Audit score is < 50, you MUST output 'NEUTRAL'.
-    2. ACCURACY OVER VOLUME: Do not force a signal. Only issue UP/DOWN if there is a 90%+ clear technical and sentiment alignment.
-    3. If 'NEUTRAL', set targets/stoploss to "N/A - Market Ranging".
-    4. Provide internal deep reasoning in 'thoughtProcess'.
+    You are an expert strategist. Look for patterns, trend exhaustion, and liquidity gaps.
+    If the setup is clear and supported by hedge fund audit/sentiment, do not hesitate to call it.
+    [COMMANDS]
+    1. INSTITUTIONAL SAFETY: If the market is dead, flat, or Hedge Fund Audit score is < 40, output 'NEUTRAL'.
+    2. ACCURACY & DECISIVENESS: If technicals and sentiment show a 85%+ alignment, be DECISIVE. Do not over-default to 'NEUTRAL' if a clear setup is forming. Institutional users want high-conviction calls.
+    3. If 'NEUTRAL', set targets/stoploss to "INCONCLUSIVE".
+    4. EMPHASIZE OPPORTUNITY: Use your 'thoughtProcess' to justify why a trade is worth the risk. Look for 'Exceptional' setups defined by multi-layer confirmation.
     
     Return ONLY a valid JSON object matching the requested schema.
   `;
