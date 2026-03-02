@@ -465,6 +465,11 @@ app.post('/api/notify-pro-click', async (req, res) => {
   const { user } = req.body;
   if (!user) return res.status(400).json({ error: 'Missing user data' });
 
+  // Debug: Log environment variable presence
+  console.log(`[Notification] Triggered for user: ${user.email}`);
+  if (!process.env.RESEND_API_KEY) console.warn('[Notification] MISSING: RESEND_API_KEY');
+  if (!process.env.NOTIFICATION_EMAIL) console.warn('[Notification] MISSING: NOTIFICATION_EMAIL');
+
   try {
     const { data, error } = await resend.emails.send({
       from: `Signalix Notifications <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
@@ -488,13 +493,14 @@ app.post('/api/notify-pro-click', async (req, res) => {
     });
 
     if (error) {
-      console.error('Resend Error:', error);
+      console.error('[Notification] Resend Error:', error);
       return res.status(500).json({ error: error.message });
     }
 
-    res.json({ success: true, id: data.id });
+    console.log('[Notification] Success! Email ID:', data?.id);
+    res.json({ success: true, id: data?.id });
   } catch (err) {
-    console.error('Notification Exception:', err);
+    console.error('[Notification] Exception:', err);
     res.status(500).json({ error: err.message });
   }
 });
