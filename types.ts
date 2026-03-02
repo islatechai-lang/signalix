@@ -191,4 +191,6 @@ export interface UserProfile {
   credits: number;
   isPro: boolean;
   joinedAt: number;
+  previousCredits?: number;
+  lastCreditReset?: number;
 }

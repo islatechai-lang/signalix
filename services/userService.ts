@@ -28,7 +28,9 @@ const mapUserToProfile = (firebaseUser: User, extraData: any): UserProfile => {
     photoURL: firebaseUser.photoURL || null,
     credits: extraData?.credits ?? INITIAL_CREDITS,
     isPro: extraData?.isPro || false,
-    joinedAt: extraData?.joinedAt || Date.now()
+    joinedAt: extraData?.joinedAt || Date.now(),
+    previousCredits: extraData?.previousCredits,
+    lastCreditReset: extraData?.lastCreditReset
   };
 };
 
@@ -239,7 +241,15 @@ export const userService = {
 
     try {
       const userDocRef = doc(db, "users", currentUser.uid);
-      const updates = { isPro: true, credits: PRO_PLAN_CREDITS };
+      const userDoc = await getDoc(userDocRef);
+      const currentData = userDoc.data();
+
+      const updates = {
+        isPro: true,
+        credits: PRO_PLAN_CREDITS,
+        previousCredits: currentData?.credits ?? INITIAL_CREDITS,
+        lastCreditReset: Date.now()
+      };
       await updateDoc(userDocRef, updates);
 
       const updatedDoc = await getDoc(userDocRef);
@@ -276,9 +286,27 @@ export const userService = {
           try {
             const status = await paymentService.checkSubscriptionStatus(currentProfile.email);
             if (!status.isPro) {
-              await updateDoc(userDocRef, { isPro: false, credits: 3 });
+              // SUBSCRIPTION EXPIRED / CANCELED
+              // Restore to previous credits if they exist, otherwise fallback to initial
+              const restoredCredits = profileData.previousCredits ?? INITIAL_CREDITS;
+              await updateDoc(userDocRef, { isPro: false, credits: restoredCredits });
               currentProfile.isPro = false;
-              currentProfile.credits = 3;
+              currentProfile.credits = restoredCredits;
+            } else {
+              // USER IS PRO - Handle Monthly Reset
+              const lastReset = profileData.lastCreditReset || currentProfile.joinedAt;
+              const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+              if (Date.now() - lastReset > thirtyDaysMs) {
+                console.log("Monthly credit reset triggered for Pro user");
+                const resetUpdates = {
+                  credits: PRO_PLAN_CREDITS,
+                  lastCreditReset: Date.now()
+                };
+                await updateDoc(userDocRef, resetUpdates);
+                currentProfile.credits = PRO_PLAN_CREDITS;
+                currentProfile.lastCreditReset = resetUpdates.lastCreditReset;
+              }
             }
           } catch (err) {
             console.warn("Failed sync", err);
