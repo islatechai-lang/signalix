@@ -7,6 +7,7 @@ import { computeIndicators } from '../services/indicatorService';
 import { analyzeMarket } from '../services/geminiService';
 import { userService } from '../services/userService';
 import { historyService } from '../services/historyService';
+import { paymentService } from '../services/paymentService';
 
 // Components
 import VerdictCard from './VerdictCard';
