@@ -232,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* 4. Legal Links */}
-        <div className="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-1 px-2">
+        <div className="mt-2 flex flex-wrap justify-center gap-x-10 gap-y-1 px-2">
           <button
             onClick={() => onNavigate('terms')}
             className="text-[10px] text-gray-700 hover:text-cyber-cyan transition-colors"
