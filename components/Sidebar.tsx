@@ -155,9 +155,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </span>
                 <div className="flex items-baseline gap-1.5">
                   <span className={`text-lg font-mono font-bold leading-none ${user.isPro ? 'text-yellow-400' : 'text-white'}`}>
-                    {user.isPro ? 'ACTIVE' : credits}
+                    {credits}
                   </span>
-                  {!user.isPro && <span className="text-[10px] text-gray-600 font-mono">CR</span>}
+                  <span className="text-[10px] text-gray-600 font-mono">CR</span>
                 </div>
               </div>
             </div>

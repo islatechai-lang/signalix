@@ -41,10 +41,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   // Sync credits to persistent storage whenever they change (Only if not Pro)
   useEffect(() => {
-    if (!user.isPro) {
-      userService.updateCredits(user.email, credits);
-    }
-  }, [credits, user.email, user.isPro]);
+    userService.updateCredits(user.email, credits);
+  }, [credits, user.email]);
 
   // Load History on Mount
   useEffect(() => {
