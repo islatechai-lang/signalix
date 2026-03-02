@@ -84,10 +84,9 @@ const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, user }) =>
               <ul className="space-y-3 mb-6">
                 {[
                   `${PRO_PLAN_CREDITS} AI Analysis / Month`,
-                  "Access to Gemini Pro Thinking Mode",
+                  "Access to Gemini 3.1 Pro",
                   "Real-time Indicator Calculations",
-                  "Priority Processing Queue",
-                  "Forex & Crypto Support"
+                  "Priority Processing Queue"
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
                     <div className="w-5 h-5 rounded-full bg-cyber-cyan/20 flex items-center justify-center shrink-0">
