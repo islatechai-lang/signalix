@@ -19,9 +19,10 @@ import Sidebar from './Sidebar';
 interface DashboardProps {
   user: UserProfile;
   onLogout: () => void;
+  onNavigate: (view: any) => void;
 }
 
-export default function Dashboard({ user, onLogout }: DashboardProps) {
+export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps) {
   // Initialize credits from the user profile passed in
   const [credits, setCredits] = useState<number>(user.credits);
 
@@ -558,6 +559,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           history={history}
           onLoadHistory={handleLoadHistory}
           onDeleteHistory={handleDeleteHistory}
+          onNavigate={onNavigate}
         />
       </div>
 
@@ -574,6 +576,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               history={history}
               onLoadHistory={handleLoadHistory}
               onDeleteHistory={handleDeleteHistory}
+              onNavigate={onNavigate}
             />
           </div>
           <div className="flex-1 bg-black/50 backdrop-blur-sm z-40" onClick={() => setIsSidebarOpen(false)}></div>

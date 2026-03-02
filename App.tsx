@@ -33,7 +33,7 @@ export default function App() {
         if (firebaseUser.emailVerified) {
           // Only set loading if we aren't already loading to prevent flicker
           // But usually we want to ensure we block UI while fetching profile
-          setLoading(true); 
+          setLoading(true);
           try {
             const params = new URLSearchParams(window.location.search);
             const paymentSuccess = params.get('payment') === 'success';
@@ -45,10 +45,10 @@ export default function App() {
               window.history.replaceState({}, '', window.location.pathname);
               setProcessingPayment(false);
             } else {
-               const profile = await userService.getCurrentUserProfile();
-               setUser(profile);
+              const profile = await userService.getCurrentUserProfile();
+              setUser(profile);
             }
-            
+
             // Switch to dashboard using functional update to avoid dependency on currentView
             setCurrentView(prev => {
               if (prev === 'auth' || prev === 'landing') return 'dashboard';
@@ -64,7 +64,7 @@ export default function App() {
           }
         } else {
           setUser(null);
-          setLoading(false); 
+          setLoading(false);
         }
       } else {
         setUser(null);
@@ -84,7 +84,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await userService.logout();
-    setCurrentView('landing'); 
+    setCurrentView('landing');
   };
 
   if (loading || processingPayment) {
@@ -92,7 +92,7 @@ export default function App() {
       <div className="min-h-screen bg-[#050508] flex flex-col gap-4 items-center justify-center">
         <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
         {processingPayment && (
-           <p className="text-gray-400 font-mono text-sm animate-pulse">Confirming Pro Subscription...</p>
+          <p className="text-gray-400 font-mono text-sm animate-pulse">Confirming Pro Subscription...</p>
         )}
       </div>
     );
@@ -101,27 +101,27 @@ export default function App() {
   return (
     <>
       {currentView === 'landing' && (
-        <LandingPage 
+        <LandingPage
           onGetStarted={() => {
-             if (user) setCurrentView('dashboard');
-             else {
-               setAuthInitialMode('signup');
-               setCurrentView('auth');
-             }
+            if (user) setCurrentView('dashboard');
+            else {
+              setAuthInitialMode('signup');
+              setCurrentView('auth');
+            }
           }}
           onLogin={() => {
-             if (user) setCurrentView('dashboard');
-             else {
-               setAuthInitialMode('login');
-               setCurrentView('auth');
-             }
+            if (user) setCurrentView('dashboard');
+            else {
+              setAuthInitialMode('login');
+              setCurrentView('auth');
+            }
           }}
           onNavigate={(view) => setCurrentView(view)}
         />
       )}
 
       {currentView === 'auth' && (
-        <AuthPage 
+        <AuthPage
           initialMode={authInitialMode}
           onLoginSuccess={handleLoginSuccess}
           onBack={() => setCurrentView('landing')}
@@ -129,9 +129,10 @@ export default function App() {
       )}
 
       {currentView === 'dashboard' && user && (
-        <Dashboard 
-          user={user} 
-          onLogout={handleLogout} 
+        <Dashboard
+          user={user}
+          onLogout={handleLogout}
+          onNavigate={setCurrentView}
         />
       )}
 

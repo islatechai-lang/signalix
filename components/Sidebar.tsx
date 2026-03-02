@@ -25,6 +25,7 @@ interface SidebarProps {
   history: HistoryItem[];
   onLoadHistory: (item: HistoryItem) => void;
   onDeleteHistory: (id: string) => void;
+  onNavigate: (view: 'terms' | 'privacy' | 'risk') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -35,7 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenSubscription,
   history,
   onLoadHistory,
-  onDeleteHistory
+  onDeleteHistory,
+  onNavigate
 }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -98,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               >
                 {/* Result Indicator Line */}
                 <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${item.result.verdict === 'UP' ? 'bg-green-500' :
-                    item.result.verdict === 'DOWN' ? 'bg-red-500' : 'bg-yellow-500'
+                  item.result.verdict === 'DOWN' ? 'bg-red-500' : 'bg-yellow-500'
                   }`}></div>
 
                 <div className="flex justify-between items-start mb-1.5 pl-2">
@@ -107,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <span className="text-[10px] text-gray-500 font-mono bg-gray-900 px-1 rounded">{item.timeframe}</span>
                   </div>
                   <span className={`text-[10px] font-bold flex items-center gap-1 ${item.result.verdict === 'UP' ? 'text-green-400' :
-                      item.result.verdict === 'DOWN' ? 'text-red-400' : 'text-yellow-400'
+                    item.result.verdict === 'DOWN' ? 'text-red-400' : 'text-yellow-400'
                     }`}>
                     {item.result.verdict === 'UP' && <ArrowUpRight className="w-3 h-3" />}
                     {item.result.verdict === 'DOWN' && <ArrowDownRight className="w-3 h-3" />}
@@ -226,6 +228,28 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className={`p-1 rounded hover:bg-white/10 transition-colors`}>
               <ChevronUp className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
             </div>
+          </button>
+        </div>
+
+        {/* 4. Legal Links */}
+        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2 border-t border-gray-800/50 pt-4">
+          <button
+            onClick={() => onNavigate('terms')}
+            className="text-[10px] text-gray-600 hover:text-cyber-cyan transition-colors"
+          >
+            Terms
+          </button>
+          <button
+            onClick={() => onNavigate('privacy')}
+            className="text-[10px] text-gray-600 hover:text-cyber-cyan transition-colors"
+          >
+            Privacy
+          </button>
+          <button
+            onClick={() => onNavigate('risk')}
+            className="text-[10px] text-gray-600 hover:text-cyber-cyan transition-colors"
+          >
+            Risk
           </button>
         </div>
 
