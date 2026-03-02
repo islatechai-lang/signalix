@@ -232,22 +232,22 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* 4. Legal Links */}
-        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 px-2 border-t border-gray-800/50 pt-4">
+        <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 px-2">
           <button
             onClick={() => onNavigate('terms')}
-            className="text-[10px] text-gray-600 hover:text-cyber-cyan transition-colors"
+            className="text-[10px] text-gray-700 hover:text-cyber-cyan transition-colors"
           >
             Terms
           </button>
           <button
             onClick={() => onNavigate('privacy')}
-            className="text-[10px] text-gray-600 hover:text-cyber-cyan transition-colors"
+            className="text-[10px] text-gray-700 hover:text-cyber-cyan transition-colors"
           >
             Privacy
           </button>
           <button
             onClick={() => onNavigate('risk')}
-            className="text-[10px] text-gray-600 hover:text-cyber-cyan transition-colors"
+            className="text-[10px] text-gray-700 hover:text-cyber-cyan transition-colors"
           >
             Risk
           </button>
