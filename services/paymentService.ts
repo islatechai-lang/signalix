@@ -69,5 +69,17 @@ export const paymentService = {
       body: JSON.stringify({ subscriptionId })
     });
     if (!res.ok) throw new Error("Failed to cancel subscription");
+  },
+
+  async notifyProInterest(user: UserProfile): Promise<void> {
+    try {
+      await fetch('/api/notify-pro-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user })
+      });
+    } catch (e) {
+      console.error("Failed to send pro interest notification", e);
+    }
   }
 };

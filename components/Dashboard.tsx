@@ -548,13 +548,15 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
   return (
     <div className="flex h-screen bg-[#050508] text-gray-200 font-sans selection:bg-purple-500/30 selection:text-white overflow-hidden">
 
-      {/* Sidebar (Desktop) - 25% width or 320px */}
       <div className="hidden lg:block w-80 h-full shrink-0 z-20">
         <Sidebar
           user={user}
           credits={credits}
           onLogout={onLogout}
-          onOpenPricing={() => setShowPricing(true)}
+          onOpenPricing={() => {
+            setShowPricing(true);
+            paymentService.notifyProInterest(user);
+          }}
           onOpenSubscription={() => setShowSubscription(true)}
           history={history}
           onLoadHistory={handleLoadHistory}
@@ -571,7 +573,11 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
               user={user}
               credits={credits}
               onLogout={onLogout}
-              onOpenPricing={() => { setShowPricing(true); setIsSidebarOpen(false); }}
+              onOpenPricing={() => {
+                setShowPricing(true);
+                setIsSidebarOpen(false);
+                paymentService.notifyProInterest(user);
+              }}
               onOpenSubscription={() => { setShowSubscription(true); setIsSidebarOpen(false); }}
               history={history}
               onLoadHistory={handleLoadHistory}

@@ -3,9 +3,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from "@google/genai";
+import { Resend } from 'resend';
 
 // Load environment variables from .env file
 dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -454,6 +457,45 @@ app.post('/api/subscription/cancel', async (req, res) => {
     console.error('Cancellation Exception:', error);
     // Try to pass the specific Whop error if available
     res.status(500).json({ error: error.message || 'Failed to cancel subscription' });
+  }
+});
+
+// --- NOTIFICATION ENDPOINT ---
+app.post('/api/notify-pro-click', async (req, res) => {
+  const { user } = req.body;
+  if (!user) return res.status(400).json({ error: 'Missing user data' });
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `Signalix Notifications <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
+      to: [process.env.NOTIFICATION_EMAIL || 'princederder44@gmail.com'],
+      subject: '🚀 New Pro Interest: "Get Pro" Clicked',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #00f3ff;">New Pro Interest Detected</h2>
+          <p>A user has clicked the <strong>"Get Pro"</strong> button on the dashboard.</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p><strong>User Details:</strong></p>
+          <ul>
+            <li><strong>Name:</strong> ${user.name}</li>
+            <li><strong>Email:</strong> ${user.email}</li>
+            <li><strong>User ID:</strong> ${user.id}</li>
+            <li><strong>Current Credits:</strong> ${user.credits}</li>
+            <li><strong>Joined At:</strong> ${new Date(user.joinedAt).toLocaleString()}</li>
+          </ul>
+        </div>
+      `
+    });
+
+    if (error) {
+      console.error('Resend Error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true, id: data.id });
+  } catch (err) {
+    console.error('Notification Exception:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
