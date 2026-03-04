@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { RefreshCw, Sidebar as SidebarIcon, Menu, Terminal } from 'lucide-react';
+import { RefreshCw, Sidebar as SidebarIcon, Menu, Terminal, Zap } from 'lucide-react';
 import { CryptoPair, FeedItem, AggregationResult, UserProfile, HistoryItem, OHLCData, ProtocolDiagnostic } from '../types';
 import { COST_PER_ANALYSIS, SYSTEM_VERSION } from '../constants';
 import { fetchOHLCData, fetchCryptoNews } from '../services/cryptoService';
@@ -526,35 +526,32 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
         sentimentData
       );
 
-      // If auto-trade is enabled and verdict is not neutral, send to API
+      // If auto-trade is enabled and verdict is not neutral, execute trade with visual feedback
       if (autoTradeEnabled && analysis.verdict !== 'NEUTRAL') {
+        const tradeStepId = addFeedItem('step-trade', { pair: pair.symbol, verdict: analysis.verdict }, 'loading');
+        scrollToBottom();
+
         try {
-          const response = await fetch('/api/analyze', {
+          const response = await fetch('/api/trade/execute', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               pairName: pair.symbol,
-              timeframe: tf,
-              ohlc,
-              indicators,
-              aggregation: aggResults,
-              hedgeFund: audit,
-              sentiment: sentimentData,
-              autoTrade: autoTradeEnabled,
+              verdict: analysis.verdict,
               binanceKeys: user.binanceKeys
             }),
           });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to send analysis for auto-trade.');
+          const tradeResult = await response.json();
+
+          if (tradeResult.success) {
+            updateFeedItem(tradeStepId, { status: 'complete', data: { pair: pair.symbol, verdict: analysis.verdict, orderId: tradeResult.orderId } });
+          } else {
+            updateFeedItem(tradeStepId, { status: 'error', data: { pair: pair.symbol, verdict: analysis.verdict, error: tradeResult.error } });
           }
-          addFeedItem('system-message', { text: `Auto-trade signal sent successfully for ${pair.symbol} ${tf}.` });
         } catch (e: any) {
-          console.error("Auto-trade API call failed:", e);
-          addFeedItem('system-message', { text: `Auto-trade failed: ${e.message}. Please check your Binance API keys.` });
+          console.error("Auto-trade execution failed:", e);
+          updateFeedItem(tradeStepId, { status: 'error', data: { pair: pair.symbol, verdict: analysis.verdict, error: e.message } });
         }
       }
       loadHistoryList(); // Refresh history list
@@ -734,6 +731,52 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                 )}
                 {item.type === 'step-ai' && (
                   <AIAnalysisStep status={item.status} result={item.data?.result} partialThought={item.data?.partialThought} duration={item.data?.duration} />
+                )}
+                {item.type === 'step-trade' && (
+                  <div className="bg-[#0a0a0f] border border-yellow-500/30 rounded-xl p-4 animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-3">
+                      {item.status === 'loading' ? (
+                        <>
+                          <div className="relative w-8 h-8">
+                            <div className="absolute inset-0 border-2 border-yellow-500/30 rounded-full"></div>
+                            <div className="absolute inset-0 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-yellow-500 flex items-center gap-1.5">
+                              <Zap className="w-4 h-4" /> Executing Trade on Binance Testnet...
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                              {item.data?.verdict} {item.data?.pair} • DO NOT close this page
+                            </p>
+                          </div>
+                        </>
+                      ) : item.status === 'complete' ? (
+                        <>
+                          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-green-500" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-green-500">Trade Executed Successfully!</div>
+                            <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                              {item.data?.verdict} {item.data?.pair} • Order ID: {item.data?.orderId || 'N/A'}
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-red-500" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-red-500">Trade Execution Failed</div>
+                            <p className="text-[10px] text-gray-500 font-mono mt-0.5">
+                              {item.data?.error || 'Unknown error'}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {item.type === 'step-verdict' && (
                   <div className="mt-4 mb-8"><VerdictCard result={item.data.result} pair={item.data.pair} /></div>

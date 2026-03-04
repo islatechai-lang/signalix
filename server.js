@@ -273,30 +273,35 @@ app.post('/api/analyze', async (req, res) => {
 
   try {
     const result = await tryGenerate(0);
-
-    // Auto-Trading Execution
-    if (req.body.autoTrade && req.body.binanceKeys && (result.verdict === 'UP' || result.verdict === 'DOWN')) {
-      try {
-        console.log(`[Server] Auto-Trade requested. Decrypting keys and executing...`);
-        const apiKey = decrypt(req.body.binanceKeys.encryptedApiKey);
-        const apiSecret = decrypt(req.body.binanceKeys.encryptedApiSecret);
-
-        // Asynchronously execute trade without blocking the response
-        executeTrade(apiKey, apiSecret, pairName, result.verdict)
-          .then(tradeResult => console.log('[Server] Trade execution result:', tradeResult))
-          .catch(e => console.error('[Server] Trade execution failed:', e.message));
-
-      } catch (e) {
-        console.error(`[Server] Failed to execute auto-trade:`, e.message);
-      }
-    }
-
     res.json(result);
   } catch (error) {
     console.error("[Server] Final Failure:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
+
+// --- TRADE EXECUTION ENDPOINT ---
+app.post('/api/trade/execute', async (req, res) => {
+  const { pairName, verdict, binanceKeys } = req.body;
+
+  if (!pairName || !verdict || !binanceKeys) {
+    return res.status(400).json({ error: 'Missing pairName, verdict, or binanceKeys.' });
+  }
+
+  try {
+    console.log(`[Trade] Executing ${verdict} on ${pairName}...`);
+    const apiKey = decrypt(binanceKeys.encryptedApiKey);
+    const apiSecret = decrypt(binanceKeys.encryptedApiSecret);
+
+    const tradeResult = await executeTrade(apiKey, apiSecret, pairName, verdict);
+    console.log('[Trade] Result:', tradeResult);
+    res.json(tradeResult);
+  } catch (e) {
+    console.error('[Trade] Failed:', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 
 // --- WHOP API HELPERS ---
 const whopFetch = async (endpoint, method = 'GET', body = null) => {

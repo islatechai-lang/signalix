@@ -157,6 +157,7 @@ export type FeedItemType =
   | 'step-hedge-fund'
   | 'step-sentiment'
   | 'step-ai'
+  | 'step-trade'
   | 'step-verdict'
   | 'system-message';
 
