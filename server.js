@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from "@google/genai";
 import { Resend } from 'resend';
+import crypto from 'crypto';
+import { executeTrade } from './tradeService.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -21,6 +23,48 @@ app.use(express.json());
 
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
+
+// --- ENCRYPTION LOGIC ---
+const ALGORITHM = 'aes-256-cbc';
+
+function encrypt(text) {
+  const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET;
+  if (!ENCRYPTION_SECRET) throw new Error('Missing ENCRYPTION_SECRET in .env');
+  const iv = crypto.randomBytes(16);
+  const key = Buffer.from(ENCRYPTION_SECRET, 'hex');
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return `${iv.toString('hex')}:${encrypted}`;
+}
+
+function decrypt(encryptedText) {
+  const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET;
+  if (!ENCRYPTION_SECRET) throw new Error('Missing ENCRYPTION_SECRET in .env');
+  const parts = encryptedText.split(':');
+  const iv = Buffer.from(parts[0], 'hex');
+  const encrypted = parts[1];
+  const key = Buffer.from(ENCRYPTION_SECRET, 'hex');
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+app.post('/api/keys/encrypt', (req, res) => {
+  const { apiKey, apiSecret } = req.body;
+  if (!apiKey || !apiSecret) {
+    return res.status(400).json({ error: 'Missing apiKey or apiSecret' });
+  }
+  try {
+    const encryptedApiKey = encrypt(apiKey);
+    const encryptedApiSecret = encrypt(apiSecret);
+    res.json({ encryptedApiKey, encryptedApiSecret });
+  } catch (error) {
+    console.error('[Encryption] Error:', error.message);
+    res.status(500).json({ error: 'Failed to encrypt keys' });
+  }
+});
 
 // --- REMOTE LOGGING ENDPOINT ---
 // Allows client to print logs to the server terminal
@@ -229,6 +273,24 @@ app.post('/api/analyze', async (req, res) => {
 
   try {
     const result = await tryGenerate(0);
+
+    // Auto-Trading Execution
+    if (req.body.autoTrade && req.body.binanceKeys && (result.verdict === 'UP' || result.verdict === 'DOWN')) {
+      try {
+        console.log(`[Server] Auto-Trade requested. Decrypting keys and executing...`);
+        const apiKey = decrypt(req.body.binanceKeys.encryptedApiKey);
+        const apiSecret = decrypt(req.body.binanceKeys.encryptedApiSecret);
+
+        // Asynchronously execute trade without blocking the response
+        executeTrade(apiKey, apiSecret, pairName, result.verdict)
+          .then(tradeResult => console.log('[Server] Trade execution result:', tradeResult))
+          .catch(e => console.error('[Server] Trade execution failed:', e.message));
+
+      } catch (e) {
+        console.error(`[Server] Failed to execute auto-trade:`, e.message);
+      }
+    }
+
     res.json(result);
   } catch (error) {
     console.error("[Server] Final Failure:", error.message);

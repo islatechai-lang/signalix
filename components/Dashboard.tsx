@@ -16,14 +16,17 @@ import SubscriptionModal from './SubscriptionModal';
 import { PairSelector, TimeframeSelector } from './SelectionUI';
 import { DataCollectionStep, TechnicalStep, AggregationStep, AIAnalysisStep, HedgeFundStep, SentimentStep, ProtocolStep } from './AnalysisSteps';
 import Sidebar from './Sidebar';
+import { ExchangeConnect } from './ExchangeConnect';
 
 interface DashboardProps {
   user: UserProfile;
+  onUpdateUser: (updates: Partial<UserProfile>) => void;
   onLogout: () => void;
   onNavigate: (view: any) => void;
 }
 
-export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps) {
+export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: DashboardProps) {
+
   // Initialize credits from the user profile passed in
   const [credits, setCredits] = useState<number>(user.credits);
 
@@ -32,11 +35,14 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
   const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [showExchangeConnect, setShowExchangeConnect] = useState(false);
+  const [autoTradeEnabled, setAutoTradeEnabled] = useState(false);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar toggle
 
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
+
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -519,6 +525,38 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
         audit,
         sentimentData
       );
+
+      // If auto-trade is enabled and verdict is not neutral, send to API
+      if (autoTradeEnabled && analysis.verdict !== 'NEUTRAL') {
+        try {
+          const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              pairName: pair.symbol,
+              timeframe: tf,
+              ohlc,
+              indicators,
+              aggregation: aggResults,
+              hedgeFund: audit,
+              sentiment: sentimentData,
+              autoTrade: autoTradeEnabled,
+              binanceKeys: user.binanceKeys
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send analysis for auto-trade.');
+          }
+          addFeedItem('system-message', { text: `Auto-trade signal sent successfully for ${pair.symbol} ${tf}.` });
+        } catch (e: any) {
+          console.error("Auto-trade API call failed:", e);
+          addFeedItem('system-message', { text: `Auto-trade failed: ${e.message}. Please check your Binance API keys.` });
+        }
+      }
       loadHistoryList(); // Refresh history list
 
       // --- FINAL VERDICT TRANSITION ---
@@ -593,36 +631,48 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full relative w-full overflow-hidden">
 
-        {/* Mobile Menu Button (Floating) */}
-        <div className="lg:hidden absolute top-4 left-4 z-30">
+        {/* Header for Main Content */}
+        <header className="flex items-center justify-between p-4 md:p-6 lg:p-8 bg-[#0a0a0f]/80 backdrop-blur-sm border-b border-gray-800 z-20 shrink-0">
+          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="p-2 bg-black/60 backdrop-blur border border-gray-700 rounded-lg text-white hover:bg-gray-800 transition-colors"
+            className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </button>
-        </div>
 
-        {/* Reset / New Session Button (Desktop: Top Right Absolute) */}
-        <div className="absolute top-4 right-4 z-30 hidden lg:block">
-          <button
-            onClick={resetSession}
-            className="p-2 bg-[#0a0a0f]/80 backdrop-blur border border-gray-800 rounded-lg hover:border-gray-600 hover:text-white text-gray-400 transition-all shadow-lg"
-            title="New Scan"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+          {/* Title */}
+          <div className="flex items-center gap-3 ml-auto md:ml-0">
+            <Terminal className="w-5 h-5 text-cyber-cyan" />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white tracking-widest uppercase">Analysis Terminal</span>
+              <span className="text-[10px] text-gray-500 font-mono tracking-widest hidden sm:block">Awaiting Input Parameters</span>
+            </div>
+          </div>
 
-        {/* Mobile Reset Button */}
-        <div className="absolute top-4 right-4 z-30 lg:hidden">
-          <button
-            onClick={resetSession}
-            className="p-2 bg-black/60 backdrop-blur border border-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
-          >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-        </div>
+          {/* Right-aligned buttons */}
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Auto-Trade Status/Settings Button */}
+            <button
+              onClick={() => setShowExchangeConnect(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-900/50 hover:bg-gray-800 border border-gray-800 rounded-lg transition-colors"
+            >
+              <div className={`w-2 h-2 rounded-full ${user.binanceKeys ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`}></div>
+              <span className="text-xs font-bold text-gray-300">
+                {user.binanceKeys ? 'Binance Connected' : 'Connect Exchange'}
+              </span>
+            </button>
+
+            {/* Reset / New Session Button */}
+            <button
+              onClick={resetSession}
+              className="p-2 bg-[#0a0a0f]/80 backdrop-blur border border-gray-800 rounded-lg hover:border-gray-600 hover:text-white text-gray-400 transition-all shadow-lg"
+              title="New Scan"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
 
         {/* Main Feed Scroll Area */}
         <main
@@ -694,7 +744,34 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
             {/* Interactive Selectors (Bottom of Feed) */}
             <div className="mt-2 transition-all duration-300">
               {sessionState === 'pair-select' && (<PairSelector onSelect={handlePairSelect} />)}
-              {sessionState === 'timeframe-select' && (<TimeframeSelector onSelect={handleTimeframeSelect} />)}
+              {sessionState === 'timeframe-select' && (
+                <div className="flex flex-col items-center">
+                  <TimeframeSelector onSelect={handleTimeframeSelect} />
+
+                  {/* Auto-Trade Toggle Area visible before hitting Analyze */}
+                  {user.binanceKeys && (
+                    <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <label className="flex items-center gap-3 cursor-pointer group bg-[#0a0a0f] border border-gray-800 p-4 rounded-xl hover:border-cyber-cyan/50 transition-colors">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={autoTradeEnabled}
+                            onChange={(e) => setAutoTradeEnabled(e.target.checked)}
+                          />
+                          <div className={`block w-10 h-6 rounded-full transition-colors ${autoTradeEnabled ? 'bg-green-500' : 'bg-gray-800'}`}></div>
+                          <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${autoTradeEnabled ? 'translate-x-4' : ''}`}></div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white">Enable Auto-Execution</div>
+                          <div className="text-[10px] text-gray-500 font-mono">Will place testnet order if High Conviction</div>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {sessionState === 'complete' && (
                 <div className="text-center animate-in fade-in duration-700 delay-500 py-6">
                   <button onClick={resetSession} className="px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full text-sm font-bold text-white transition-all hover:scale-105 flex items-center gap-2 mx-auto">
@@ -709,6 +786,24 @@ export default function Dashboard({ user, onLogout, onNavigate }: DashboardProps
 
         <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} user={user} />
         <SubscriptionModal isOpen={showSubscription} onClose={() => setShowSubscription(false)} user={user} />
+
+        {showExchangeConnect && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-md animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 relative">
+              <button
+                onClick={() => setShowExchangeConnect(false)}
+                className="absolute top-4 right-4 z-20 text-gray-500 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+              <ExchangeConnect
+                user={user}
+                onUpdateUser={onUpdateUser}
+                onClose={() => setShowExchangeConnect(false)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

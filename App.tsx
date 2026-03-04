@@ -131,6 +131,7 @@ export default function App() {
       {currentView === 'dashboard' && user && (
         <Dashboard
           user={user}
+          onUpdateUser={(updates: Partial<UserProfile>) => setUser({ ...user, ...updates })}
           onLogout={handleLogout}
           onNavigate={setCurrentView}
         />

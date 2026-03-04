@@ -186,11 +186,16 @@ export type AnalysisStage = typeof AnalysisStage[keyof typeof AnalysisStage];
 export interface UserProfile {
   id: string;
   name: string;
-  email: string;
-  photoURL?: string | null;
+  email: string | null;
+  photoURL: string | null;
   credits: number;
   isPro: boolean;
-  joinedAt: number;
+  joinedAt?: number;
   previousCredits?: number;
+  subscriptionId?: string;
   lastCreditReset?: number;
+  binanceKeys?: {
+    encryptedApiKey: string;
+    encryptedApiSecret: string;
+  };
 }

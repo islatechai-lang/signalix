@@ -220,7 +220,7 @@ export const userService = {
   },
 
   // Update credits in Firestore
-  async updateCredits(email: string, newAmount: number): Promise<void> {
+  async updateCredits(email: string | null, newAmount: number): Promise<void> {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
 
@@ -319,5 +319,15 @@ export const userService = {
     }
 
     return mapUserToProfile(user, { credits: INITIAL_CREDITS, isPro: false });
+  },
+
+  async updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<void> {
+    try {
+      const userDocRef = doc(db, "users", userId);
+      await updateDoc(userDocRef, data);
+    } catch (error) {
+      console.warn("Failed to update user profile", error);
+      throw error;
+    }
   }
 };
