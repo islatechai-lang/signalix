@@ -540,24 +540,27 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
 
       // If auto-trade is enabled and verdict is not neutral, execute trade with visual feedback
       if (autoTradeEnabled && analysis.verdict !== 'NEUTRAL' && pair.type === 'CRYPTO') {
+        console.log(`[Dashboard] 🔄 Auto-trade triggered: ${analysis.verdict} ${pair.symbol}`);
         const tradeStepId = addFeedItem('step-trade', { pair: pair.symbol, verdict: analysis.verdict }, 'loading');
         scrollToBottom();
 
         try {
+          console.log(`[Dashboard] 📡 Sending trade request to /api/trade/execute...`);
           const response = await fetch('/api/trade/execute', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               pairName: pair.symbol,
               verdict: analysis.verdict,
-              binanceKeys: user.binanceKeys,
-              userId: user.id
+              binanceKeys: user.binanceKeys
             }),
           });
 
           const tradeResult = await response.json();
+          console.log(`[Dashboard] 📥 Trade response received:`, tradeResult);
 
           if (tradeResult.success) {
+            console.log(`[Dashboard] ✅ Trade SUCCESS! Order: ${tradeResult.orderId}, Side: ${tradeResult.side}, Amount: ${tradeResult.amount}, Price: $${tradeResult.price}`);
             updateFeedItem(tradeStepId, {
               status: 'complete',
               data: {
@@ -571,6 +574,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
               }
             });
             // Save trade to Firestore client-side
+            console.log(`[Dashboard] 💾 Saving trade to Firestore...`);
             await tradeHistoryService.saveTrade({
               userId: user.id,
               pair: pair.symbol,
@@ -582,12 +586,14 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
               status: 'success',
               timestamp: Date.now()
             });
+            console.log(`[Dashboard] ✅ Trade saved. Refreshing trade history...`);
             loadTradeHistory();
           } else {
+            console.error(`[Dashboard] ❌ Trade FAILED:`, tradeResult.error);
             updateFeedItem(tradeStepId, { status: 'error', data: { pair: pair.symbol, verdict: analysis.verdict, error: tradeResult.error } });
           }
         } catch (e: any) {
-          console.error("Auto-trade execution failed:", e);
+          console.error(`[Dashboard] ❌ Trade request exception:`, e);
           updateFeedItem(tradeStepId, { status: 'error', data: { pair: pair.symbol, verdict: analysis.verdict, error: e.message } });
         }
       }
@@ -698,6 +704,45 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                 {user.binanceKeys ? 'Binance Connected' : 'Connect Exchange'}
               </span>
             </button>
+
+            {/* Verify Trades Button - only when connected */}
+            {user.binanceKeys && (
+              <button
+                onClick={async () => {
+                  console.log('[Dashboard] 🔍 Verifying trades on Binance...');
+                  addFeedItem('system-message', { text: '🔍 Verifying trades on Binance Testnet...' });
+                  try {
+                    const resp = await fetch('/api/trade/verify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ binanceKeys: user.binanceKeys })
+                    });
+                    const data = await resp.json();
+                    console.log('[Dashboard] Verify result:', data);
+
+                    const balanceText = `💰 Testnet Balance: ${Number(data.balance?.USDT || 0).toFixed(2)} USDT | ${Number(data.balance?.BTC || 0).toFixed(6)} BTC`;
+                    addFeedItem('system-message', { text: balanceText });
+
+                    if (data.orders && data.orders.length > 0) {
+                      const orderList = data.orders.slice(0, 5).map((o: any) =>
+                        `${o.side} ${o.pair} | ${Number(o.amount).toFixed(6)} @ $${Number(o.price || 0).toLocaleString()} | ${o.status} | ${o.datetime || 'N/A'}`
+                      ).join('\n');
+                      addFeedItem('system-message', { text: `📋 Recent Orders from Binance:\n${orderList}` });
+                    } else {
+                      addFeedItem('system-message', { text: '📋 No orders found on Binance Testnet for common pairs.' });
+                    }
+                  } catch (e: any) {
+                    addFeedItem('system-message', { text: `❌ Verification failed: ${e.message}` });
+                  }
+                  scrollToBottom();
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-lg transition-colors"
+                title="Check your Binance Testnet balance and recent orders"
+              >
+                <Zap className="w-3 h-3 text-yellow-500" />
+                <span className="text-xs font-bold text-yellow-400">Verify Trades</span>
+              </button>
+            )}
 
             {/* Reset / New Session Button */}
             <button

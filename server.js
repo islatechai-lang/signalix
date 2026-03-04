@@ -284,21 +284,59 @@ app.post('/api/analyze', async (req, res) => {
 app.post('/api/trade/execute', async (req, res) => {
   const { pairName, verdict, binanceKeys } = req.body;
 
+  console.log(`\n[Server:Trade] ==========================================`);
+  console.log(`[Server:Trade] 📥 Received trade execution request`);
+  console.log(`[Server:Trade]   Pair: ${pairName}`);
+  console.log(`[Server:Trade]   Verdict: ${verdict}`);
+  console.log(`[Server:Trade]   Has Keys: ${!!binanceKeys}`);
+  console.log(`[Server:Trade] ==========================================`);
+
   if (!pairName || !verdict || !binanceKeys) {
+    console.error(`[Server:Trade] ❌ Missing required fields! pairName=${!!pairName}, verdict=${!!verdict}, binanceKeys=${!!binanceKeys}`);
     return res.status(400).json({ error: 'Missing pairName, verdict, or binanceKeys.' });
   }
 
   try {
-    console.log(`[Trade] Executing ${verdict} on ${pairName}...`);
+    console.log(`[Server:Trade] 🔓 Decrypting API keys...`);
+    const apiKey = decrypt(binanceKeys.encryptedApiKey);
+    const apiSecret = decrypt(binanceKeys.encryptedApiSecret);
+    console.log(`[Server:Trade] ✅ Keys decrypted successfully (key starts with: ${apiKey.substring(0, 8)}...)`);
+
+    console.log(`[Server:Trade] 🚀 Calling executeTrade()...`);
+    const tradeResult = await executeTrade(apiKey, apiSecret, pairName, verdict);
+
+    console.log(`[Server:Trade] 📤 Sending response to frontend:`, JSON.stringify(tradeResult, null, 2));
+    res.json(tradeResult);
+  } catch (e) {
+    console.error(`[Server:Trade] ❌ FATAL ERROR:`, e.message);
+    console.error(`[Server:Trade] Stack:`, e.stack);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// --- TRADE VERIFICATION ENDPOINT ---
+// Query Binance Testnet directly to verify trades and check balance
+app.post('/api/trade/verify', async (req, res) => {
+  const { binanceKeys, pair } = req.body;
+
+  console.log(`[Server:Verify] 🔍 Trade verification request for: ${pair || 'all pairs'}`);
+
+  if (!binanceKeys) {
+    return res.status(400).json({ error: 'Missing binanceKeys.' });
+  }
+
+  try {
     const apiKey = decrypt(binanceKeys.encryptedApiKey);
     const apiSecret = decrypt(binanceKeys.encryptedApiSecret);
 
-    const tradeResult = await executeTrade(apiKey, apiSecret, pairName, verdict);
-    console.log('[Trade] Result:', tradeResult);
-    res.json(tradeResult);
+    const { fetchRecentOrders } = await import('./tradeService.js');
+    const result = await fetchRecentOrders(apiKey, apiSecret, pair);
+
+    console.log(`[Server:Verify] ✅ Verification complete. Orders found: ${result.orders?.length || 0}`);
+    res.json(result);
   } catch (e) {
-    console.error('[Trade] Failed:', e.message);
-    res.status(500).json({ success: false, error: e.message });
+    console.error(`[Server:Verify] ❌ Verification failed:`, e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
