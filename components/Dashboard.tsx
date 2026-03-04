@@ -552,7 +552,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
             body: JSON.stringify({
               pairName: pair.symbol,
               verdict: analysis.verdict,
-              binanceKeys: user.binanceKeys
+              exchangeKeys: user.exchangeKeys
             }),
           });
 
@@ -699,23 +699,23 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
               onClick={() => setShowExchangeConnect(true)}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-900/50 hover:bg-gray-800 border border-gray-800 rounded-lg transition-colors"
             >
-              <div className={`w-2 h-2 rounded-full ${user.binanceKeys ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${user.exchangeKeys ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`}></div>
               <span className="text-xs font-bold text-gray-300">
-                {user.binanceKeys ? 'Binance Connected' : 'Connect Exchange'}
+                {user.exchangeKeys ? 'KuCoin Connected' : 'Connect Exchange'}
               </span>
             </button>
 
             {/* Verify Trades Button - only when connected */}
-            {user.binanceKeys && (
+            {user.exchangeKeys && (
               <button
                 onClick={async () => {
-                  console.log('[Dashboard] 🔍 Verifying trades on Binance...');
-                  addFeedItem('system-message', { text: '🔍 Verifying trades on Binance Testnet...' });
+                  console.log('[Dashboard] 🔍 Verifying trades on KuCoin...');
+                  addFeedItem('system-message', { text: '🔍 Verifying trades on KuCoin Sandbox...' });
                   try {
                     const resp = await fetch('/api/trade/verify', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ binanceKeys: user.binanceKeys })
+                      body: JSON.stringify({ exchangeKeys: user.exchangeKeys })
                     });
                     const data = await resp.json();
                     console.log('[Dashboard] Verify result:', data);
@@ -727,9 +727,9 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                       const orderList = data.orders.slice(0, 5).map((o: any) =>
                         `${o.side} ${o.pair} | ${Number(o.amount).toFixed(6)} @ $${Number(o.price || 0).toLocaleString()} | ${o.status} | ${o.datetime || 'N/A'}`
                       ).join('\n');
-                      addFeedItem('system-message', { text: `📋 Recent Orders from Binance:\n${orderList}` });
+                      addFeedItem('system-message', { text: `📋 Recent Orders from KuCoin:\n${orderList}` });
                     } else {
-                      addFeedItem('system-message', { text: '📋 No orders found on Binance Testnet for common pairs.' });
+                      addFeedItem('system-message', { text: '📋 No orders found on KuCoin Sandbox for common pairs.' });
                     }
                   } catch (e: any) {
                     addFeedItem('system-message', { text: `❌ Verification failed: ${e.message}` });
@@ -737,7 +737,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                   scrollToBottom();
                 }}
                 className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-lg transition-colors"
-                title="Check your Binance Testnet balance and recent orders"
+                title="Check your KuCoin Sandbox balance and recent orders"
               >
                 <Zap className="w-3 h-3 text-yellow-500" />
                 <span className="text-xs font-bold text-yellow-400">Verify Trades</span>
@@ -827,7 +827,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                           </div>
                           <div>
                             <div className="text-sm font-bold text-yellow-500 flex items-center gap-1.5">
-                              <Zap className="w-4 h-4" /> Executing Trade on Binance Testnet...
+                              <Zap className="w-4 h-4" /> Executing Trade on KuCoin Sandbox...
                             </div>
                             <p className="text-[10px] text-gray-500 font-mono mt-0.5">
                               {item.data?.verdict} {item.data?.pair} • DO NOT close this page
@@ -893,7 +893,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                   <TimeframeSelector onSelect={handleTimeframeSelect} />
 
                   {/* Auto-Trade Toggle Area visible before hitting Analyze */}
-                  {user.binanceKeys && selectedPair?.type === 'CRYPTO' && (
+                  {user.exchangeKeys && selectedPair?.type === 'CRYPTO' && (
                     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <label className="flex items-center gap-3 cursor-pointer group bg-[#0a0a0f] border border-gray-800 p-4 rounded-xl hover:border-cyber-cyan/50 transition-colors">
                         <div className="relative">

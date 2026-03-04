@@ -52,14 +52,16 @@ function decrypt(encryptedText) {
 }
 
 app.post('/api/keys/encrypt', (req, res) => {
-  const { apiKey, apiSecret } = req.body;
-  if (!apiKey || !apiSecret) {
-    return res.status(400).json({ error: 'Missing apiKey or apiSecret' });
+  const { apiKey, apiSecret, passphrase } = req.body;
+  if (!apiKey || !apiSecret || !passphrase) {
+    return res.status(400).json({ error: 'Missing apiKey, apiSecret, or passphrase' });
   }
   try {
     const encryptedApiKey = encrypt(apiKey);
     const encryptedApiSecret = encrypt(apiSecret);
-    res.json({ encryptedApiKey, encryptedApiSecret });
+    const encryptedPassphrase = encrypt(passphrase);
+    console.log(`[Server:Keys] ✅ Keys encrypted successfully`);
+    res.json({ encryptedApiKey, encryptedApiSecret, encryptedPassphrase });
   } catch (error) {
     console.error('[Encryption] Error:', error.message);
     res.status(500).json({ error: 'Failed to encrypt keys' });
@@ -282,28 +284,30 @@ app.post('/api/analyze', async (req, res) => {
 
 // --- TRADE EXECUTION ENDPOINT ---
 app.post('/api/trade/execute', async (req, res) => {
-  const { pairName, verdict, binanceKeys } = req.body;
+  const { pairName, verdict, exchangeKeys } = req.body;
 
   console.log(`\n[Server:Trade] ==========================================`);
   console.log(`[Server:Trade] 📥 Received trade execution request`);
+  console.log(`[Server:Trade]   Exchange: KuCoin Sandbox`);
   console.log(`[Server:Trade]   Pair: ${pairName}`);
   console.log(`[Server:Trade]   Verdict: ${verdict}`);
-  console.log(`[Server:Trade]   Has Keys: ${!!binanceKeys}`);
+  console.log(`[Server:Trade]   Has Keys: ${!!exchangeKeys}`);
   console.log(`[Server:Trade] ==========================================`);
 
-  if (!pairName || !verdict || !binanceKeys) {
-    console.error(`[Server:Trade] ❌ Missing required fields! pairName=${!!pairName}, verdict=${!!verdict}, binanceKeys=${!!binanceKeys}`);
-    return res.status(400).json({ error: 'Missing pairName, verdict, or binanceKeys.' });
+  if (!pairName || !verdict || !exchangeKeys) {
+    console.error(`[Server:Trade] ❌ Missing required fields! pairName=${!!pairName}, verdict=${!!verdict}, exchangeKeys=${!!exchangeKeys}`);
+    return res.status(400).json({ error: 'Missing pairName, verdict, or exchangeKeys.' });
   }
 
   try {
     console.log(`[Server:Trade] 🔓 Decrypting API keys...`);
-    const apiKey = decrypt(binanceKeys.encryptedApiKey);
-    const apiSecret = decrypt(binanceKeys.encryptedApiSecret);
+    const apiKey = decrypt(exchangeKeys.encryptedApiKey);
+    const apiSecret = decrypt(exchangeKeys.encryptedApiSecret);
+    const passphrase = decrypt(exchangeKeys.encryptedPassphrase);
     console.log(`[Server:Trade] ✅ Keys decrypted successfully (key starts with: ${apiKey.substring(0, 8)}...)`);
 
     console.log(`[Server:Trade] 🚀 Calling executeTrade()...`);
-    const tradeResult = await executeTrade(apiKey, apiSecret, pairName, verdict);
+    const tradeResult = await executeTrade(apiKey, apiSecret, passphrase, pairName, verdict);
 
     console.log(`[Server:Trade] 📤 Sending response to frontend:`, JSON.stringify(tradeResult, null, 2));
     res.json(tradeResult);
@@ -315,22 +319,23 @@ app.post('/api/trade/execute', async (req, res) => {
 });
 
 // --- TRADE VERIFICATION ENDPOINT ---
-// Query Binance Testnet directly to verify trades and check balance
+// Query KuCoin Sandbox directly to verify trades and check balance
 app.post('/api/trade/verify', async (req, res) => {
-  const { binanceKeys, pair } = req.body;
+  const { exchangeKeys, pair } = req.body;
 
   console.log(`[Server:Verify] 🔍 Trade verification request for: ${pair || 'all pairs'}`);
 
-  if (!binanceKeys) {
-    return res.status(400).json({ error: 'Missing binanceKeys.' });
+  if (!exchangeKeys) {
+    return res.status(400).json({ error: 'Missing exchangeKeys.' });
   }
 
   try {
-    const apiKey = decrypt(binanceKeys.encryptedApiKey);
-    const apiSecret = decrypt(binanceKeys.encryptedApiSecret);
+    const apiKey = decrypt(exchangeKeys.encryptedApiKey);
+    const apiSecret = decrypt(exchangeKeys.encryptedApiSecret);
+    const passphrase = decrypt(exchangeKeys.encryptedPassphrase);
 
     const { fetchRecentOrders } = await import('./tradeService.js');
-    const result = await fetchRecentOrders(apiKey, apiSecret, pair);
+    const result = await fetchRecentOrders(apiKey, apiSecret, passphrase, pair);
 
     console.log(`[Server:Verify] ✅ Verification complete. Orders found: ${result.orders?.length || 0}`);
     res.json(result);

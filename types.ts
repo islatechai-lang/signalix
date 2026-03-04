@@ -194,9 +194,10 @@ export interface UserProfile {
   previousCredits?: number;
   subscriptionId?: string;
   lastCreditReset?: number;
-  binanceKeys?: {
+  exchangeKeys?: {
     encryptedApiKey: string;
     encryptedApiSecret: string;
+    encryptedPassphrase: string;
   };
 }
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { userService } from '../services/userService';
-import { Settings, CheckCircle2, AlertCircle, Key, Lock, Loader2, ArrowRight } from 'lucide-react';
+import { Settings, CheckCircle2, AlertCircle, Key, Lock, Loader2, ArrowRight, Shield } from 'lucide-react';
 
 interface ExchangeConnectProps {
     user: UserProfile;
@@ -12,19 +12,19 @@ interface ExchangeConnectProps {
 export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdateUser, onClose }) => {
     const [apiKey, setApiKey] = useState('');
     const [apiSecret, setApiSecret] = useState('');
+    const [passphrase, setPassphrase] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
 
-    // Check if they already have keys
-    const isConnected = !!user.binanceKeys;
+    const isConnected = !!user.exchangeKeys;
 
     const handleConnect = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!apiKey || !apiSecret) {
-            setError('Both API Key and Secret are required.');
+        if (!apiKey || !apiSecret || !passphrase) {
+            setError('API Key, Secret, and Passphrase are all required.');
             return;
         }
 
@@ -35,32 +35,34 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
             const response = await fetch('/api/keys/encrypt', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ apiKey, apiSecret })
+                body: JSON.stringify({ apiKey, apiSecret, passphrase })
             });
 
             if (!response.ok) {
                 throw new Error('Failed to secure keys. Server error.');
             }
 
-            const { encryptedApiKey, encryptedApiSecret } = await response.json();
+            const { encryptedApiKey, encryptedApiSecret, encryptedPassphrase } = await response.json();
 
-            if (!encryptedApiKey || !encryptedApiSecret) {
+            if (!encryptedApiKey || !encryptedApiSecret || !encryptedPassphrase) {
                 throw new Error('Invalid response from server.');
             }
 
             // 2. Save encrypted keys to Firestore User Profile
             await userService.updateUserProfile(user.id, {
-                binanceKeys: {
+                exchangeKeys: {
                     encryptedApiKey,
-                    encryptedApiSecret
+                    encryptedApiSecret,
+                    encryptedPassphrase
                 }
             });
 
             // 3. Update local state
             onUpdateUser({
-                binanceKeys: {
+                exchangeKeys: {
                     encryptedApiKey,
-                    encryptedApiSecret
+                    encryptedApiSecret,
+                    encryptedPassphrase
                 }
             });
 
@@ -78,20 +80,19 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
     };
 
     const handleDisconnect = async () => {
-        if (!window.confirm("Are you sure you want to disconnect your Binance Testnet keys?")) return;
+        if (!window.confirm("Are you sure you want to disconnect your KuCoin Sandbox keys?")) return;
 
         setLoading(true);
         try {
-            // Remove keys from Firestore
             await userService.updateUserProfile(user.id, {
-                binanceKeys: undefined
+                exchangeKeys: undefined
             });
-            // Update local state
             onUpdateUser({
-                binanceKeys: undefined
+                exchangeKeys: undefined
             });
             setApiKey('');
             setApiSecret('');
+            setPassphrase('');
         } catch (err: any) {
             setError("Failed to disconnect: " + err.message);
         } finally {
@@ -111,7 +112,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white tracking-tight">Auto-Trading Setup</h2>
-                        <p className="text-xs text-gray-500 font-mono mt-0.5">Binance Testnet Integration</p>
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">KuCoin Sandbox Integration</p>
                     </div>
                 </div>
 
@@ -121,7 +122,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                             <CheckCircle2 className="w-5 h-5 text-green-500" />
                             <span className="text-sm font-bold text-green-500">Connected & Ready</span>
                         </div>
-                        <p className="text-xs text-green-500/80 mb-4">Your Binance Testnet API keys are securely encrypted and stored. Signalix AI can now execute trades automatically.</p>
+                        <p className="text-xs text-green-500/80 mb-4">Your KuCoin Sandbox API keys are securely encrypted and stored. Signalix AI can now execute trades automatically.</p>
                         <button
                             onClick={handleDisconnect}
                             disabled={loading}
@@ -141,18 +142,18 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                         <div className="p-4 bg-[#15151a] border border-gray-800 rounded-lg">
                             <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 text-cyber-cyan" />
-                                Step 1: Create Account
+                                Step 1: Create KuCoin Sandbox Account
                             </h3>
                             <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                                To start auto-trading for free, you need a Binance Testnet account. It gives you risk-free virtual funds to use with our AI.
+                                To start auto-trading for free, you need a KuCoin Sandbox account. It gives you risk-free virtual funds to use with our AI.
                             </p>
                             <a
-                                href="https://testnet.binance.vision/"
+                                href="https://sandbox.kucoin.com/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 text-xs text-cyber-cyan hover:text-white transition-colors"
                             >
-                                Sign up via our Affiliate Link <ArrowRight className="w-3 h-3" />
+                                Go to KuCoin Sandbox <ArrowRight className="w-3 h-3" />
                             </a>
                         </div>
 
@@ -171,7 +172,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                                         value={apiKey}
                                         onChange={(e) => setApiKey(e.target.value)}
                                         className="w-full bg-[#0a0a0f] border border-gray-800 focus:border-yellow-500/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
-                                        placeholder="Paste Testnet API Key"
+                                        placeholder="Paste Sandbox API Key"
                                     />
                                 </div>
                             </div>
@@ -185,7 +186,21 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                                         value={apiSecret}
                                         onChange={(e) => setApiSecret(e.target.value)}
                                         className="w-full bg-[#0a0a0f] border border-gray-800 focus:border-yellow-500/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
-                                        placeholder="Paste Testnet API Secret"
+                                        placeholder="Paste Sandbox API Secret"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] text-gray-500 font-mono mb-1.5 uppercase">Passphrase</label>
+                                <div className="relative">
+                                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
+                                    <input
+                                        type="password"
+                                        value={passphrase}
+                                        onChange={(e) => setPassphrase(e.target.value)}
+                                        className="w-full bg-[#0a0a0f] border border-gray-800 focus:border-yellow-500/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
+                                        placeholder="Paste Sandbox Passphrase"
                                     />
                                 </div>
                             </div>
@@ -202,7 +217,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
 
                         <button
                             type="submit"
-                            disabled={loading || !apiKey || !apiSecret}
+                            disabled={loading || !apiKey || !apiSecret || !passphrase}
                             className="w-full h-11 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 disabled:hover:bg-yellow-500 text-black font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Secure & Connect Keys'}

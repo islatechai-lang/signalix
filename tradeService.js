@@ -1,22 +1,24 @@
 import ccxt from 'ccxt';
 
 /**
- * Execute a market trade on Binance Testnet
+ * Execute a market trade on KuCoin Sandbox
  * Every single step is logged for debugging via Render server logs
  */
-export async function executeTrade(apiKey, apiSecret, pair, verdict) {
+export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict) {
     console.log(`\n========================================`);
     console.log(`[TRADE] ⚡ NEW TRADE EXECUTION REQUEST`);
+    console.log(`[TRADE] Exchange: KuCoin Sandbox`);
     console.log(`[TRADE] Pair: ${pair} | Verdict: ${verdict}`);
     console.log(`[TRADE] Timestamp: ${new Date().toISOString()}`);
     console.log(`========================================`);
 
     try {
         // STEP 1: Initialize exchange
-        console.log(`[TRADE] Step 1/7: Initializing ccxt Binance Testnet connection...`);
-        const exchange = new ccxt.binance({
+        console.log(`[TRADE] Step 1/7: Initializing ccxt KuCoin Sandbox connection...`);
+        const exchange = new ccxt.kucoin({
             apiKey: apiKey,
             secret: apiSecret,
+            password: passphrase,
             enableRateLimit: true,
         });
         exchange.setSandboxMode(true);
@@ -32,9 +34,9 @@ export async function executeTrade(apiKey, apiSecret, pair, verdict) {
         console.log(`[TRADE] Step 3/7: Checking if ${pair} is available...`);
         if (!exchange.markets[pair]) {
             const availablePairs = Object.keys(exchange.markets).filter(p => p.includes('USDT')).slice(0, 20).join(', ');
-            console.error(`[TRADE] Step 3/7: ❌ FAILED - ${pair} NOT available on Binance Testnet`);
+            console.error(`[TRADE] Step 3/7: ❌ FAILED - ${pair} NOT available on KuCoin Sandbox`);
             console.error(`[TRADE] Available USDT pairs: ${availablePairs}`);
-            throw new Error(`${pair} is not available on Binance Testnet. Available: ${availablePairs}`);
+            throw new Error(`${pair} is not available on KuCoin Sandbox. Available: ${availablePairs}`);
         }
         console.log(`[TRADE] Step 3/7: ✅ ${pair} is available`);
 
@@ -79,7 +81,7 @@ export async function executeTrade(apiKey, apiSecret, pair, verdict) {
         }
 
         // STEP 7: Execute trade
-        console.log(`[TRADE] Step 7/7: 🚀 SENDING MARKET ORDER TO BINANCE TESTNET...`);
+        console.log(`[TRADE] Step 7/7: 🚀 SENDING MARKET ORDER TO KUCOIN SANDBOX...`);
         console.log(`[TRADE]   → Side: ${side.toUpperCase()}`);
         console.log(`[TRADE]   → Pair: ${pair}`);
         console.log(`[TRADE]   → Amount: ${amount} ${baseAsset}`);
@@ -124,22 +126,21 @@ export async function executeTrade(apiKey, apiSecret, pair, verdict) {
         console.error(`[TRADE]   Pair: ${pair}`);
         console.error(`[TRADE]   Verdict: ${verdict}`);
         console.error(`[TRADE]   Error: ${error.message}`);
-        if (error.message.includes('apiKey')) console.error(`[TRADE]   💡 HINT: Your API key might be invalid or expired. Regenerate it at testnet.binance.vision`);
-        if (error.message.includes('insufficient') || error.message.includes('balance')) console.error(`[TRADE]   💡 HINT: The testnet account may have been reset. Check your balance.`);
-        if (error.message.includes('not available')) console.error(`[TRADE]   💡 HINT: This pair doesn't exist on Binance Testnet. Only major pairs are supported.`);
+        if (error.message.includes('apiKey') || error.message.includes('key')) console.error(`[TRADE]   💡 HINT: Your API key might be invalid. Regenerate at sandbox.kucoin.com`);
+        if (error.message.includes('insufficient') || error.message.includes('balance')) console.error(`[TRADE]   💡 HINT: The sandbox account may need more funds. Check your balance.`);
+        if (error.message.includes('not available')) console.error(`[TRADE]   💡 HINT: This pair doesn't exist on KuCoin Sandbox.`);
         console.error(`[TRADE] ========================================\n`);
         return { success: false, error: error.message };
     }
 }
 
 /**
- * Fetch recent orders for a pair from Binance Testnet
- * Used to VERIFY that trades actually went through
+ * Fetch recent orders from KuCoin Sandbox to VERIFY trades
  */
-export async function fetchRecentOrders(apiKey, apiSecret, pair) {
+export async function fetchRecentOrders(apiKey, apiSecret, passphrase, pair) {
     console.log(`[TRADE-VERIFY] Fetching recent orders for ${pair || 'all pairs'}...`);
     try {
-        const exchange = new ccxt.binance({ apiKey, secret: apiSecret, enableRateLimit: true });
+        const exchange = new ccxt.kucoin({ apiKey, secret: apiSecret, password: passphrase, enableRateLimit: true });
         exchange.setSandboxMode(true);
         await exchange.loadMarkets();
 
@@ -147,6 +148,7 @@ export async function fetchRecentOrders(apiKey, apiSecret, pair) {
         const balance = await exchange.fetchBalance();
         const usdt = balance?.free?.USDT || 0;
         const btc = balance?.free?.BTC || 0;
+        const eth = balance?.free?.ETH || 0;
 
         // Fetch recent orders
         let orders = [];
@@ -154,11 +156,14 @@ export async function fetchRecentOrders(apiKey, apiSecret, pair) {
             if (pair && exchange.markets[pair]) {
                 orders = await exchange.fetchOrders(pair, undefined, 10);
             } else {
-                // Try fetching for common pairs
-                for (const p of ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BNB/USDT']) {
+                for (const p of ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']) {
                     if (exchange.markets[p]) {
-                        const pairOrders = await exchange.fetchOrders(p, undefined, 5);
-                        orders = orders.concat(pairOrders);
+                        try {
+                            const pairOrders = await exchange.fetchOrders(p, undefined, 5);
+                            orders = orders.concat(pairOrders);
+                        } catch (e) {
+                            // Some pairs may not have orders, skip
+                        }
                     }
                 }
             }
@@ -167,7 +172,7 @@ export async function fetchRecentOrders(apiKey, apiSecret, pair) {
         }
 
         const result = {
-            balance: { USDT: usdt, BTC: btc },
+            balance: { USDT: usdt, BTC: btc, ETH: eth },
             orders: orders.map(o => ({
                 id: o.id,
                 pair: o.symbol,
@@ -181,7 +186,7 @@ export async function fetchRecentOrders(apiKey, apiSecret, pair) {
             }))
         };
 
-        console.log(`[TRADE-VERIFY] ✅ Found ${result.orders.length} orders. Balance: ${usdt} USDT, ${btc} BTC`);
+        console.log(`[TRADE-VERIFY] ✅ Found ${result.orders.length} orders. Balance: ${usdt} USDT, ${btc} BTC, ${eth} ETH`);
         return result;
     } catch (error) {
         console.error(`[TRADE-VERIFY] ❌ Failed: ${error.message}`);
