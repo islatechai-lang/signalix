@@ -139,10 +139,10 @@ app.post('/api/analyze', async (req, res) => {
     You are an expert strategist. Look for patterns, trend exhaustion, and liquidity gaps.
     If the setup is clear and supported by hedge fund audit/sentiment, do not hesitate to call it.
     [COMMANDS]
-    1. INSTITUTIONAL SAFETY: If the market is dead, flat, or Hedge Fund Audit score is < 40, output 'NEUTRAL'.
-    2. ACCURACY & DECISIVENESS: If technicals and sentiment show a 85%+ alignment, be DECISIVE. Do not over-default to 'NEUTRAL' if a clear setup is forming. Institutional users want high-conviction calls.
+    1. INSTITUTIONAL SAFETY: If the market is completely dead or flat, output 'NEUTRAL'.
+    2. ACCURACY & DECISIVENESS: If technicals and sentiment show a 80%+ alignment (Moderate/Strong/Exceptional), be DECISIVE and provide a direction. Do not over-default to 'NEUTRAL' if a clear setup is forming.
     3. If 'NEUTRAL', set targets/stoploss to "INCONCLUSIVE".
-    4. EMPHASIZE OPPORTUNITY: Use your 'thoughtProcess' to justify why a trade is worth the risk. Look for 'Exceptional' setups defined by multi-layer confirmation.
+    4. EMPHASIZE OPPORTUNITY: Use your 'thoughtProcess' to justify why a trade is worth the risk.
     
     Return ONLY a valid JSON object matching the requested schema.
   `;
@@ -200,16 +200,7 @@ app.post('/api/analyze', async (req, res) => {
         }
       }
 
-      // --- HIGH CONFIDENCE ENFORCEMENT ---
-      // If the AI gives a direction (UP or DOWN), we mathematically ensure
-      // the confidence is between 92% and 99% to give the user authority.
-      if (parsed.verdict === 'UP' || parsed.verdict === 'DOWN') {
-        if (parsed.confidence < 90) {
-          console.log(`[Server] Boosting confidence from ${parsed.confidence}% to High Confidence range.`);
-          // Map it to a random number between 92 and 98
-          parsed.confidence = Math.floor(Math.random() * (98 - 92 + 1)) + 92;
-        }
-      }
+      // Removed: Artificial confidence boosting to allow real-world Moderate/Strong signals.
 
       console.log(`[Server] Success: ${currentModel} -> Verdict: ${parsed.verdict} (${parsed.confidence}%)`);
       return parsed;
