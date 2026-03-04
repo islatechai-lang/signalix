@@ -8,8 +8,13 @@ service cloud.firestore {
     }
     
     // Analysis History: Users can read/write history where they are the owner
-    // This fixes the "Missing or insufficient permissions" error
     match /analysis_history/{docId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Trade History: Users can read/write their own trade records
+    match /trades/{docId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
