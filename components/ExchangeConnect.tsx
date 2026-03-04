@@ -80,7 +80,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
     };
 
     const handleDisconnect = async () => {
-        if (!window.confirm("Are you sure you want to disconnect your KuCoin Sandbox keys?")) return;
+        if (!window.confirm("Are you sure you want to disconnect your KuCoin API keys?")) return;
 
         setLoading(true);
         try {
@@ -112,7 +112,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-white tracking-tight">Auto-Trading Setup</h2>
-                        <p className="text-xs text-gray-500 font-mono mt-0.5">KuCoin Sandbox Integration</p>
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">KuCoin Live Integration</p>
                     </div>
                 </div>
 
@@ -122,7 +122,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                             <CheckCircle2 className="w-5 h-5 text-green-500" />
                             <span className="text-sm font-bold text-green-500">Connected & Ready</span>
                         </div>
-                        <p className="text-xs text-green-500/80 mb-4">Your KuCoin Sandbox API keys are securely encrypted and stored. Signalix AI can now execute trades automatically.</p>
+                        <p className="text-xs text-green-500/80 mb-4">Your KuCoin API keys are securely encrypted and stored. Signalix AI can now execute trades automatically (~$1 per trade).</p>
                         <button
                             onClick={handleDisconnect}
                             disabled={loading}
@@ -142,18 +142,18 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                         <div className="p-4 bg-[#15151a] border border-gray-800 rounded-lg">
                             <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-2">
                                 <AlertCircle className="w-4 h-4 text-cyber-cyan" />
-                                Step 1: Create KuCoin Sandbox Account
+                                Step 1: Create KuCoin Account
                             </h3>
                             <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                                To start auto-trading for free, you need a KuCoin Sandbox account. It gives you risk-free virtual funds to use with our AI.
+                                Create a KuCoin account. Our AI trades ~$1 per signal to minimize risk. Go to API Management in your account settings to create an API key with Spot Trading permission.
                             </p>
                             <a
-                                href="https://sandbox.kucoin.com/"
+                                href="https://www.kucoin.com/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 text-xs text-cyber-cyan hover:text-white transition-colors"
                             >
-                                Go to KuCoin Sandbox <ArrowRight className="w-3 h-3" />
+                                Sign up on KuCoin <ArrowRight className="w-3 h-3" />
                             </a>
                         </div>
 
@@ -172,7 +172,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                                         value={apiKey}
                                         onChange={(e) => setApiKey(e.target.value)}
                                         className="w-full bg-[#0a0a0f] border border-gray-800 focus:border-yellow-500/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
-                                        placeholder="Paste Sandbox API Key"
+                                        placeholder="Paste API Key"
                                     />
                                 </div>
                             </div>
@@ -186,7 +186,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                                         value={apiSecret}
                                         onChange={(e) => setApiSecret(e.target.value)}
                                         className="w-full bg-[#0a0a0f] border border-gray-800 focus:border-yellow-500/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
-                                        placeholder="Paste Sandbox API Secret"
+                                        placeholder="Paste API Secret"
                                     />
                                 </div>
                             </div>
@@ -200,7 +200,7 @@ export const ExchangeConnect: React.FC<ExchangeConnectProps> = ({ user, onUpdate
                                         value={passphrase}
                                         onChange={(e) => setPassphrase(e.target.value)}
                                         className="w-full bg-[#0a0a0f] border border-gray-800 focus:border-yellow-500/50 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
-                                        placeholder="Paste Sandbox Passphrase"
+                                        placeholder="Paste Passphrase"
                                     />
                                 </div>
                             </div>

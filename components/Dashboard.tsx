@@ -710,7 +710,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
               <button
                 onClick={async () => {
                   console.log('[Dashboard] 🔍 Verifying trades on KuCoin...');
-                  addFeedItem('system-message', { text: '🔍 Verifying trades on KuCoin Sandbox...' });
+                  addFeedItem('system-message', { text: '🔍 Verifying trades on KuCoin...' });
                   try {
                     const resp = await fetch('/api/trade/verify', {
                       method: 'POST',
@@ -729,7 +729,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                       ).join('\n');
                       addFeedItem('system-message', { text: `📋 Recent Orders from KuCoin:\n${orderList}` });
                     } else {
-                      addFeedItem('system-message', { text: '📋 No orders found on KuCoin Sandbox for common pairs.' });
+                      addFeedItem('system-message', { text: '📋 No orders found on KuCoin for common pairs.' });
                     }
                   } catch (e: any) {
                     addFeedItem('system-message', { text: `❌ Verification failed: ${e.message}` });
@@ -737,7 +737,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                   scrollToBottom();
                 }}
                 className="flex items-center gap-2 px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-lg transition-colors"
-                title="Check your KuCoin Sandbox balance and recent orders"
+                title="Check your KuCoin balance and recent orders"
               >
                 <Zap className="w-3 h-3 text-yellow-500" />
                 <span className="text-xs font-bold text-yellow-400">Verify Trades</span>
@@ -827,7 +827,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                           </div>
                           <div>
                             <div className="text-sm font-bold text-yellow-500 flex items-center gap-1.5">
-                              <Zap className="w-4 h-4" /> Executing Trade on KuCoin Sandbox...
+                              <Zap className="w-4 h-4" /> Executing Trade on KuCoin...
                             </div>
                             <p className="text-[10px] text-gray-500 font-mono mt-0.5">
                               {item.data?.verdict} {item.data?.pair} • DO NOT close this page

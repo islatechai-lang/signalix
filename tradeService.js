@@ -1,33 +1,29 @@
 import ccxt from 'ccxt';
 
 /**
- * Execute a market trade on KuCoin Sandbox
- * Every single step is logged for debugging via Render server logs
+ * Execute a market trade on KuCoin (Real API)
+ * KuCoin sandbox is offline — their docs recommend testing with small funds.
+ * We trade ~$1 worth to minimize risk.
+ * Every single step is logged for debugging via Render server logs.
  */
 export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict) {
     console.log(`\n========================================`);
     console.log(`[TRADE] ⚡ NEW TRADE EXECUTION REQUEST`);
-    console.log(`[TRADE] Exchange: KuCoin Sandbox`);
+    console.log(`[TRADE] Exchange: KuCoin (Live)`);
     console.log(`[TRADE] Pair: ${pair} | Verdict: ${verdict}`);
     console.log(`[TRADE] Timestamp: ${new Date().toISOString()}`);
     console.log(`========================================`);
 
     try {
         // STEP 1: Initialize exchange
-        console.log(`[TRADE] Step 1/7: Initializing ccxt KuCoin Sandbox connection...`);
+        console.log(`[TRADE] Step 1/7: Initializing ccxt KuCoin connection...`);
         const exchange = new ccxt.kucoin({
             apiKey: apiKey,
             secret: apiSecret,
             password: passphrase,
             enableRateLimit: true,
-            urls: {
-                api: {
-                    public: 'https://openapi-sandbox.kucoin.com',
-                    private: 'https://openapi-sandbox.kucoin.com',
-                }
-            }
         });
-        console.log(`[TRADE] Step 1/7: ✅ Exchange initialized with sandbox URL`);
+        console.log(`[TRADE] Step 1/7: ✅ Exchange initialized (Live API)`);
 
         // STEP 2: Load markets
         console.log(`[TRADE] Step 2/7: Loading available markets...`);
@@ -39,9 +35,9 @@ export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict)
         console.log(`[TRADE] Step 3/7: Checking if ${pair} is available...`);
         if (!exchange.markets[pair]) {
             const availablePairs = Object.keys(exchange.markets).filter(p => p.includes('USDT')).slice(0, 20).join(', ');
-            console.error(`[TRADE] Step 3/7: ❌ FAILED - ${pair} NOT available on KuCoin Sandbox`);
-            console.error(`[TRADE] Available USDT pairs: ${availablePairs}`);
-            throw new Error(`${pair} is not available on KuCoin Sandbox. Available: ${availablePairs}`);
+            console.error(`[TRADE] Step 3/7: ❌ FAILED - ${pair} NOT available on KuCoin`);
+            console.error(`[TRADE] Sample USDT pairs: ${availablePairs}`);
+            throw new Error(`${pair} is not available on KuCoin. Try a different pair.`);
         }
         console.log(`[TRADE] Step 3/7: ✅ ${pair} is available`);
 
@@ -64,21 +60,32 @@ export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict)
         }
         console.log(`[TRADE] Step 5/7: ✅ Current price: $${price}`);
 
-        // STEP 6: Calculate order
+        // STEP 6: Calculate order (use ~$1 to minimize risk)
+        const TRADE_AMOUNT_USD = 1; // Only $1 per trade for safety
         const side = verdict === 'UP' ? 'buy' : 'sell';
-        let amount = 10 / price; // ~$10 worth
+        let amount = TRADE_AMOUNT_USD / price;
         const market = exchange.markets[pair];
+
+        // Apply exchange precision
         if (market?.precision?.amount !== undefined) {
             amount = exchange.amountToPrecision(pair, amount);
         }
         amount = parseFloat(amount);
 
-        console.log(`[TRADE] Step 6/7: Calculated order → ${side.toUpperCase()} ${amount} ${baseAsset} @ $${price} (~$${(amount * price).toFixed(2)})`);
+        // Check minimum order size
+        const minAmount = market?.limits?.amount?.min || 0;
+        if (amount < minAmount) {
+            console.error(`[TRADE] Step 6/7: ❌ Order too small. Min: ${minAmount} ${baseAsset}, calculated: ${amount}`);
+            throw new Error(`Order amount (${amount} ${baseAsset}) is below minimum (${minAmount}). Try a higher-value pair or increase trade amount.`);
+        }
+
+        const estimatedCost = (amount * price).toFixed(2);
+        console.log(`[TRADE] Step 6/7: Calculated order → ${side.toUpperCase()} ${amount} ${baseAsset} @ $${price} (~$${estimatedCost})`);
 
         // Balance check
-        if (side === 'buy' && availableQuote < 10) {
-            console.error(`[TRADE] Step 6/7: ❌ INSUFFICIENT BALANCE - Need ~$10 ${quoteAsset}, have ${availableQuote.toFixed(2)}`);
-            throw new Error(`Insufficient ${quoteAsset} balance (${availableQuote.toFixed(2)}). Need ~$10.`);
+        if (side === 'buy' && availableQuote < TRADE_AMOUNT_USD) {
+            console.error(`[TRADE] Step 6/7: ❌ INSUFFICIENT BALANCE - Need ~$${TRADE_AMOUNT_USD} ${quoteAsset}, have ${availableQuote.toFixed(2)}`);
+            throw new Error(`Insufficient ${quoteAsset} balance (${availableQuote.toFixed(2)}). Need ~$${TRADE_AMOUNT_USD}.`);
         }
         if (side === 'sell' && availableBase < amount) {
             console.error(`[TRADE] Step 6/7: ❌ INSUFFICIENT BALANCE - Need ${amount} ${baseAsset}, have ${availableBase}`);
@@ -86,11 +93,11 @@ export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict)
         }
 
         // STEP 7: Execute trade
-        console.log(`[TRADE] Step 7/7: 🚀 SENDING MARKET ORDER TO KUCOIN SANDBOX...`);
+        console.log(`[TRADE] Step 7/7: 🚀 SENDING MARKET ORDER TO KUCOIN...`);
         console.log(`[TRADE]   → Side: ${side.toUpperCase()}`);
         console.log(`[TRADE]   → Pair: ${pair}`);
         console.log(`[TRADE]   → Amount: ${amount} ${baseAsset}`);
-        console.log(`[TRADE]   → Estimated Cost: ~$${(amount * price).toFixed(2)} ${quoteAsset}`);
+        console.log(`[TRADE]   → Estimated Cost: ~$${estimatedCost} ${quoteAsset}`);
 
         const order = await exchange.createMarketOrder(pair, side, amount);
 
@@ -131,28 +138,29 @@ export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict)
         console.error(`[TRADE]   Pair: ${pair}`);
         console.error(`[TRADE]   Verdict: ${verdict}`);
         console.error(`[TRADE]   Error: ${error.message}`);
-        if (error.message.includes('apiKey') || error.message.includes('key')) console.error(`[TRADE]   💡 HINT: Your API key might be invalid. Regenerate at sandbox.kucoin.com`);
-        if (error.message.includes('insufficient') || error.message.includes('balance')) console.error(`[TRADE]   💡 HINT: The sandbox account may need more funds. Check your balance.`);
-        if (error.message.includes('not available')) console.error(`[TRADE]   💡 HINT: This pair doesn't exist on KuCoin Sandbox.`);
+        if (error.message.includes('apiKey') || error.message.includes('key') || error.message.includes('KC-API')) {
+            console.error(`[TRADE]   💡 HINT: Your API key might be invalid. Make sure you're using REAL KuCoin keys (not sandbox).`);
+        }
+        if (error.message.includes('insufficient') || error.message.includes('balance') || error.message.includes('Balance')) {
+            console.error(`[TRADE]   💡 HINT: Deposit some USDT to your KuCoin Trading Account first.`);
+        }
+        if (error.message.includes('not available')) {
+            console.error(`[TRADE]   💡 HINT: This pair might not exist on KuCoin.`);
+        }
+        console.error(`[TRADE]   Full error: ${JSON.stringify(error.message)}`);
         console.error(`[TRADE] ========================================\n`);
         return { success: false, error: error.message };
     }
 }
 
 /**
- * Fetch recent orders from KuCoin Sandbox to VERIFY trades
+ * Fetch recent orders from KuCoin to VERIFY trades
  */
 export async function fetchRecentOrders(apiKey, apiSecret, passphrase, pair) {
     console.log(`[TRADE-VERIFY] Fetching recent orders for ${pair || 'all pairs'}...`);
     try {
         const exchange = new ccxt.kucoin({
-            apiKey, secret: apiSecret, password: passphrase, enableRateLimit: true,
-            urls: {
-                api: {
-                    public: 'https://openapi-sandbox.kucoin.com',
-                    private: 'https://openapi-sandbox.kucoin.com',
-                }
-            }
+            apiKey, secret: apiSecret, password: passphrase, enableRateLimit: true
         });
         await exchange.loadMarkets();
 
