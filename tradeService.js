@@ -20,9 +20,14 @@ export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict)
             secret: apiSecret,
             password: passphrase,
             enableRateLimit: true,
+            urls: {
+                api: {
+                    public: 'https://openapi-sandbox.kucoin.com',
+                    private: 'https://openapi-sandbox.kucoin.com',
+                }
+            }
         });
-        exchange.setSandboxMode(true);
-        console.log(`[TRADE] Step 1/7: ✅ Exchange initialized in sandbox mode`);
+        console.log(`[TRADE] Step 1/7: ✅ Exchange initialized with sandbox URL`);
 
         // STEP 2: Load markets
         console.log(`[TRADE] Step 2/7: Loading available markets...`);
@@ -140,8 +145,15 @@ export async function executeTrade(apiKey, apiSecret, passphrase, pair, verdict)
 export async function fetchRecentOrders(apiKey, apiSecret, passphrase, pair) {
     console.log(`[TRADE-VERIFY] Fetching recent orders for ${pair || 'all pairs'}...`);
     try {
-        const exchange = new ccxt.kucoin({ apiKey, secret: apiSecret, password: passphrase, enableRateLimit: true });
-        exchange.setSandboxMode(true);
+        const exchange = new ccxt.kucoin({
+            apiKey, secret: apiSecret, password: passphrase, enableRateLimit: true,
+            urls: {
+                api: {
+                    public: 'https://openapi-sandbox.kucoin.com',
+                    private: 'https://openapi-sandbox.kucoin.com',
+                }
+            }
+        });
         await exchange.loadMarkets();
 
         // Fetch balance
