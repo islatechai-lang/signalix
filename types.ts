@@ -1,4 +1,3 @@
-
 export interface CryptoPair {
   symbol: string;
   base: string;
@@ -199,4 +198,18 @@ export interface UserProfile {
     encryptedApiKey: string;
     encryptedApiSecret: string;
   };
+}
+
+export interface TradeRecord {
+  id?: string;
+  userId: string;
+  pair: string;
+  side: 'BUY' | 'SELL';
+  amount: number;
+  price: number;
+  cost: number;
+  orderId: string;
+  status: 'success' | 'failed';
+  error?: string;
+  timestamp: number;
 }

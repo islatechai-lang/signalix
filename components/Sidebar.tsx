@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CryptoPair, HistoryItem, UserProfile } from '../types';
+import { CryptoPair, HistoryItem, UserProfile, TradeRecord } from '../types';
 import logo from '../logo.png';
 import {
   Clock,
@@ -23,6 +23,7 @@ interface SidebarProps {
   onOpenPricing: () => void;
   onOpenSubscription: () => void;
   history: HistoryItem[];
+  tradeHistory: TradeRecord[];
   onLoadHistory: (item: HistoryItem) => void;
   onDeleteHistory: (id: string) => void;
   onNavigate: (view: 'terms' | 'privacy' | 'risk') => void;
@@ -35,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onOpenPricing,
   onOpenSubscription,
   history,
+  tradeHistory,
   onLoadHistory,
   onDeleteHistory,
   onNavigate
@@ -136,6 +138,43 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Trade History Section */}
+        {tradeHistory.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4 px-2 opacity-50">
+              <Zap className="w-3 h-3 text-yellow-500" />
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Recent Trades</span>
+            </div>
+            <div className="space-y-2 pb-4">
+              {tradeHistory.slice(0, 10).map((trade) => (
+                <div
+                  key={trade.id || trade.orderId}
+                  className="bg-[#0a0a0f] border border-gray-800/50 rounded-lg p-3 relative overflow-hidden"
+                >
+                  <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${trade.side === 'BUY' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <div className="flex justify-between items-start mb-1 pl-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${trade.side === 'BUY' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                        {trade.side}
+                      </span>
+                      <span className="font-bold text-gray-200 text-sm">{trade.pair}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold ${trade.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                      {trade.status === 'success' ? '✓' : '✗'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pl-2">
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      {Number(trade.amount).toFixed(4)} @ ${Number(trade.price).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-gray-600 font-mono">{formatTime(trade.timestamp)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

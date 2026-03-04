@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { RefreshCw, Sidebar as SidebarIcon, Menu, Terminal, Zap } from 'lucide-react';
-import { CryptoPair, FeedItem, AggregationResult, UserProfile, HistoryItem, OHLCData, ProtocolDiagnostic } from '../types';
+import { CryptoPair, FeedItem, AggregationResult, UserProfile, HistoryItem, OHLCData, ProtocolDiagnostic, TradeRecord } from '../types';
 import { COST_PER_ANALYSIS, SYSTEM_VERSION } from '../constants';
 import { fetchOHLCData, fetchCryptoNews } from '../services/cryptoService';
 import { computeIndicators } from '../services/indicatorService';
 import { analyzeMarket } from '../services/geminiService';
 import { userService } from '../services/userService';
 import { historyService } from '../services/historyService';
+import { tradeHistoryService } from '../services/tradeHistoryService';
 import { paymentService } from '../services/paymentService';
 
 // Components
@@ -42,6 +43,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
 
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [tradeHistory, setTradeHistory] = useState<TradeRecord[]>([]);
 
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -61,6 +63,16 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
     const items = await historyService.getUserHistory(user.id);
     setHistory(items);
   };
+
+  const loadTradeHistory = async () => {
+    const trades = await tradeHistoryService.getUserTrades(user.id);
+    setTradeHistory(trades);
+  };
+
+  // Load trade history on mount
+  useEffect(() => {
+    loadTradeHistory();
+  }, [user.id]);
 
   const handleDeleteHistory = async (id: string) => {
     try {
@@ -527,7 +539,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
       );
 
       // If auto-trade is enabled and verdict is not neutral, execute trade with visual feedback
-      if (autoTradeEnabled && analysis.verdict !== 'NEUTRAL') {
+      if (autoTradeEnabled && analysis.verdict !== 'NEUTRAL' && pair.type === 'CRYPTO') {
         const tradeStepId = addFeedItem('step-trade', { pair: pair.symbol, verdict: analysis.verdict }, 'loading');
         scrollToBottom();
 
@@ -538,14 +550,39 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
             body: JSON.stringify({
               pairName: pair.symbol,
               verdict: analysis.verdict,
-              binanceKeys: user.binanceKeys
+              binanceKeys: user.binanceKeys,
+              userId: user.id
             }),
           });
 
           const tradeResult = await response.json();
 
           if (tradeResult.success) {
-            updateFeedItem(tradeStepId, { status: 'complete', data: { pair: pair.symbol, verdict: analysis.verdict, orderId: tradeResult.orderId } });
+            updateFeedItem(tradeStepId, {
+              status: 'complete',
+              data: {
+                pair: pair.symbol,
+                verdict: analysis.verdict,
+                orderId: tradeResult.orderId,
+                side: tradeResult.side,
+                amount: tradeResult.amount,
+                price: tradeResult.price,
+                cost: tradeResult.cost
+              }
+            });
+            // Save trade to Firestore client-side
+            await tradeHistoryService.saveTrade({
+              userId: user.id,
+              pair: pair.symbol,
+              side: tradeResult.side,
+              amount: tradeResult.amount,
+              price: tradeResult.price,
+              cost: tradeResult.cost,
+              orderId: tradeResult.orderId,
+              status: 'success',
+              timestamp: Date.now()
+            });
+            loadTradeHistory();
           } else {
             updateFeedItem(tradeStepId, { status: 'error', data: { pair: pair.symbol, verdict: analysis.verdict, error: tradeResult.error } });
           }
@@ -595,6 +632,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
           }}
           onOpenSubscription={() => setShowSubscription(true)}
           history={history}
+          tradeHistory={tradeHistory}
           onLoadHistory={handleLoadHistory}
           onDeleteHistory={handleDeleteHistory}
           onNavigate={onNavigate}
@@ -616,6 +654,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
               }}
               onOpenSubscription={() => { setShowSubscription(true); setIsSidebarOpen(false); }}
               history={history}
+              tradeHistory={tradeHistory}
               onLoadHistory={handleLoadHistory}
               onDeleteHistory={handleDeleteHistory}
               onNavigate={onNavigate}
@@ -752,13 +791,30 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                         </>
                       ) : item.status === 'complete' ? (
                         <>
-                          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
                             <Zap className="w-4 h-4 text-green-500" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <div className="text-sm font-bold text-green-500">Trade Executed Successfully!</div>
-                            <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                              {item.data?.verdict} {item.data?.pair} • Order ID: {item.data?.orderId || 'N/A'}
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                <span className="text-gray-600">SIDE:</span> <span className={item.data?.side === 'BUY' ? 'text-green-400' : 'text-red-400'}>{item.data?.side}</span>
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                <span className="text-gray-600">PAIR:</span> {item.data?.pair}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                <span className="text-gray-600">AMOUNT:</span> {Number(item.data?.amount || 0).toFixed(6)}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                <span className="text-gray-600">PRICE:</span> ${Number(item.data?.price || 0).toLocaleString()}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                <span className="text-gray-600">COST:</span> ${Number(item.data?.cost || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-gray-600 font-mono mt-1">
+                              Order ID: {item.data?.orderId || 'N/A'}
                             </p>
                           </div>
                         </>
@@ -792,7 +848,7 @@ export default function Dashboard({ user, onUpdateUser, onLogout, onNavigate }: 
                   <TimeframeSelector onSelect={handleTimeframeSelect} />
 
                   {/* Auto-Trade Toggle Area visible before hitting Analyze */}
-                  {user.binanceKeys && (
+                  {user.binanceKeys && selectedPair?.type === 'CRYPTO' && (
                     <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <label className="flex items-center gap-3 cursor-pointer group bg-[#0a0a0f] border border-gray-800 p-4 rounded-xl hover:border-cyber-cyan/50 transition-colors">
                         <div className="relative">
